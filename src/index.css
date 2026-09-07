@@ -24,3 +24,7 @@ body {
   background: var(--bg-main);
   color: var(--text-primary);
 }
+
+button {
+  line-height: 1;
+}
