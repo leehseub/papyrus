@@ -127,7 +127,7 @@ papyrus/
 
 ---
 
-## Inspiration
+## Reference
 
 - [Obsidian](https://obsidian.md) — Vault concept, wikilinks, graph view
 - [Notion](https://notion.so) — Block-based WYSIWYG editing experience

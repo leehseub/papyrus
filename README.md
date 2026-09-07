@@ -127,7 +127,7 @@ papyrus/
 
 ---
 
-## 영감
+## Reference
 
 - [Obsidian](https://obsidian.md) — Vault 개념, wikilink, 그래프 뷰
 - [Notion](https://notion.so) — 블록 기반 WYSIWYG 편집 경험
