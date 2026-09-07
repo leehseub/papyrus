@@ -7,6 +7,7 @@ interface ElectronAPI {
   onUpdateReady: (cb: (version: string) => void) => void
   onUpdateStatus: (cb: (status: string) => void) => void
   restartAndInstall: () => void
+  getVersion: () => Promise<string>
 }
 
 declare global {

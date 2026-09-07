@@ -417,18 +417,22 @@ function App() {
   const isElectron = !!window.electronAPI
 
   // Auto-update
+  const [appVersion, setAppVersion] = useState<string | null>(null)
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
-  const [updateStatus, setUpdateStatus] = useState<string | null>(null)
+  const [isLatest, setIsLatest] = useState(false)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
 
   useEffect(() => {
+    window.electronAPI?.getVersion?.().then(v => setAppVersion(v)).catch(() => {})
     window.electronAPI?.onUpdateReady?.((version: string) => {
       const skipped = localStorage.getItem('papyrus-skipped-version')
       if (skipped === version) return
       setUpdateVersion(version)
-      setUpdateStatus(null)
+      setBannerDismissed(false)
+      setIsLatest(false)
     })
     window.electronAPI?.onUpdateStatus?.((status: string) => {
-      setUpdateStatus(status)
+      if (status === 'not-available') setIsLatest(true)
     })
   }, [])
 
@@ -442,17 +446,18 @@ function App() {
   }
 
   function handleRemindLater() {
-    setUpdateVersion(null)
+    setBannerDismissed(true)
+  }
+
+  function handleShowBanner() {
+    setBannerDismissed(false)
   }
 
   return (
     <LocaleContext.Provider value={t}>
     <div className="app">
       {isElectron && <TitleBar />}
-      {updateStatus && !updateVersion && (
-        <div className="update-status-bar">{updateStatus}</div>
-      )}
-      {updateVersion && (
+      {updateVersion && !bannerDismissed && (
         <div className="update-banner">
           <span className="update-banner-msg">{t.updateReady(updateVersion)}</span>
           <div className="update-banner-actions">
@@ -602,6 +607,13 @@ function App() {
             )}
 
             <div className="sidebar-footer">
+              {isElectron && updateVersion && bannerDismissed ? (
+                <button className="version-badge version-update" onClick={handleShowBanner} title={t.updateReady(updateVersion)}>
+                  ↑ v{updateVersion}
+                </button>
+              ) : isElectron && isLatest && appVersion ? (
+                <span className="version-badge version-latest">● v{appVersion}</span>
+              ) : null}
               <button
                 className="theme-icon-btn"
                 onClick={toggleTheme}
