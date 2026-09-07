@@ -87,17 +87,16 @@ app.whenReady().then(() => {
       win?.webContents.send(channel, data)
     }
 
-    autoUpdater.on('checking-for-update', () => {
-      sendToRenderer('update-status', 'checking')
-    })
+    autoUpdater.autoDownload = false
+
     autoUpdater.on('update-available', (info) => {
-      sendToRenderer('update-status', `available: ${info.version}`)
+      sendToRenderer('update-available', info.version)
     })
     autoUpdater.on('update-not-available', () => {
       sendToRenderer('update-status', 'not-available')
     })
     autoUpdater.on('download-progress', (p) => {
-      sendToRenderer('update-status', `downloading: ${Math.round(p.percent)}%`)
+      sendToRenderer('update-progress', Math.round(p.percent))
     })
     autoUpdater.on('update-downloaded', (info) => {
       sendToRenderer('update-ready', info.version)
@@ -110,8 +109,14 @@ app.whenReady().then(() => {
   }
 })
 
+ipcMain.handle('get-app-version', () => app.getVersion())
+
+ipcMain.on('download-update', () => {
+  autoUpdater.downloadUpdate()
+})
+
 ipcMain.on('restart-and-install', () => {
-  autoUpdater.quitAndInstall()
+  autoUpdater.quitAndInstall(true, true)
 })
 
 app.on('window-all-closed', () => {

@@ -80,8 +80,11 @@ export const translations = {
     note: '노트',
 
     // Update banner
+    updateAvailable: (v: string) => `v${v} 업데이트 가능`,
+    download: '다운로드',
+    downloading: (pct: number) => `다운로드 중... ${pct}%`,
     updateReady: (v: string) => `v${v} 업데이트 준비 완료`,
-    restartToUpdate: '재시작하여 업데이트',
+    restartToUpdate: '지금 업데이트',
     skipVersion: '이번 버전 건너뛰기',
     remindLater: '나중에',
   },
@@ -167,8 +170,11 @@ export const translations = {
     note: 'Note',
 
     // Update banner
-    updateReady: (v: string) => `v${v} update ready`,
-    restartToUpdate: 'Restart to update',
+    updateAvailable: (v: string) => `v${v} available`,
+    download: 'Download',
+    downloading: (pct: number) => `Downloading... ${pct}%`,
+    updateReady: (v: string) => `v${v} ready to install`,
+    restartToUpdate: 'Update now',
     skipVersion: 'Skip this version',
     remindLater: 'Later',
   },

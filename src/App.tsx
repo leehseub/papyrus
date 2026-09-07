@@ -418,30 +418,47 @@ function App() {
 
   // Auto-update
   const [appVersion, setAppVersion] = useState<string | null>(null)
+  const [availableVersion, setAvailableVersion] = useState<string | null>(null)
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null)
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [isLatest, setIsLatest] = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(false)
 
   useEffect(() => {
     window.electronAPI?.getVersion?.().then(v => setAppVersion(v)).catch(() => {})
-    window.electronAPI?.onUpdateReady?.((version: string) => {
+    window.electronAPI?.onUpdateAvailable?.((version: string) => {
       const skipped = localStorage.getItem('papyrus-skipped-version')
       if (skipped === version) return
+      setAvailableVersion(version)
+      setBannerDismissed(false)
+    })
+    window.electronAPI?.onUpdateProgress?.((percent: number) => {
+      setDownloadProgress(percent)
+    })
+    window.electronAPI?.onUpdateReady?.((version: string) => {
+      setDownloadProgress(null)
+      setAvailableVersion(null)
       setUpdateVersion(version)
       setBannerDismissed(false)
-      setIsLatest(false)
     })
     window.electronAPI?.onUpdateStatus?.((status: string) => {
       if (status === 'not-available') setIsLatest(true)
     })
   }, [])
 
+  function handleDownloadUpdate() {
+    setDownloadProgress(0)
+    window.electronAPI?.downloadUpdate()
+  }
+
   function handleRestartAndInstall() {
     window.electronAPI?.restartAndInstall()
   }
 
   function handleSkipVersion() {
-    if (updateVersion) localStorage.setItem('papyrus-skipped-version', updateVersion)
+    const ver = updateVersion ?? availableVersion
+    if (ver) localStorage.setItem('papyrus-skipped-version', ver)
+    setAvailableVersion(null)
     setUpdateVersion(null)
   }
 
@@ -457,15 +474,33 @@ function App() {
     <LocaleContext.Provider value={t}>
     <div className="app">
       {isElectron && <TitleBar />}
-      {updateVersion && !bannerDismissed && (
-        <div className="update-banner">
-          <span className="update-banner-msg">{t.updateReady(updateVersion)}</span>
-          <div className="update-banner-actions">
-            <button className="update-btn update-btn-primary" onClick={handleRestartAndInstall}>{t.restartToUpdate}</button>
-            <button className="update-btn" onClick={handleRemindLater}>{t.remindLater}</button>
-            <button className="update-btn update-btn-skip" onClick={handleSkipVersion}>{t.skipVersion}</button>
+      {!bannerDismissed && (
+        updateVersion ? (
+          <div className="update-banner">
+            <span className="update-banner-msg">{t.updateReady(updateVersion)}</span>
+            <div className="update-banner-actions">
+              <button className="update-btn update-btn-primary" onClick={handleRestartAndInstall}>{t.restartToUpdate}</button>
+              <button className="update-btn" onClick={handleRemindLater}>{t.remindLater}</button>
+              <button className="update-btn update-btn-skip" onClick={handleSkipVersion}>{t.skipVersion}</button>
+            </div>
           </div>
-        </div>
+        ) : downloadProgress !== null ? (
+          <div className="update-banner">
+            <span className="update-banner-msg">{t.downloading(downloadProgress)}</span>
+            <div className="update-progress-bar">
+              <div className="update-progress-fill" style={{ width: `${downloadProgress}%` }} />
+            </div>
+          </div>
+        ) : availableVersion ? (
+          <div className="update-banner">
+            <span className="update-banner-msg">{t.updateAvailable(availableVersion)}</span>
+            <div className="update-banner-actions">
+              <button className="update-btn update-btn-primary" onClick={handleDownloadUpdate}>{t.download}</button>
+              <button className="update-btn" onClick={handleRemindLater}>{t.remindLater}</button>
+              <button className="update-btn update-btn-skip" onClick={handleSkipVersion}>{t.skipVersion}</button>
+            </div>
+          </div>
+        ) : null
       )}
       <div className="app-body">
         <aside
@@ -607,9 +642,9 @@ function App() {
             )}
 
             <div className="sidebar-footer">
-              {isElectron && updateVersion && bannerDismissed ? (
-                <button className="version-badge version-update" onClick={handleShowBanner} title={t.updateReady(updateVersion)}>
-                  ↑ v{updateVersion}
+              {isElectron && (updateVersion ?? availableVersion) && bannerDismissed ? (
+                <button className="version-badge version-update" onClick={handleShowBanner} title={t.updateReady(updateVersion ?? availableVersion ?? '')}>
+                  ↑ v{updateVersion ?? availableVersion}
                 </button>
               ) : isElectron && isLatest && appVersion ? (
                 <span className="version-badge version-latest">● v{appVersion}</span>
