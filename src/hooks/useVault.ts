@@ -64,6 +64,66 @@ async function buildTree(
 }
 
 
+// ─── Electron IPC 기반 가짜 핸들 ────────────────────────────────────────────
+// Electron에서는 File System Access API 권한이 재시작 시 초기화되므로
+// Node.js fs(IPC)를 통해 실제 파일 작업을 수행하는 핸들 객체를 만들어
+// 기존 코드(buildTree, useFile 등)가 변경 없이 동작하게 한다.
+
+type FsApi = NonNullable<Window['electronAPI']>['fs']
+
+function createFakeFileHandle(absPath: string, api: FsApi): FileSystemFileHandle {
+  const name = absPath.replace(/\\/g, '/').split('/').pop()!
+  return {
+    kind: 'file',
+    name,
+    isSameEntry: async () => false,
+    getFile: async () => {
+      const content = await api.readfile(absPath)
+      return new File([content], name, { type: 'text/markdown' })
+    },
+    createWritable: async () => {
+      let _data = ''
+      return {
+        write: async (chunk: unknown) => {
+          if (typeof chunk === 'string') _data = chunk
+          else if (chunk instanceof Blob) _data = await chunk.text()
+        },
+        close: async () => { await api.writefile(absPath, _data) },
+        abort: async () => {},
+      } as unknown as FileSystemWritableFileStream
+    },
+  } as unknown as FileSystemFileHandle
+}
+
+function createFakeDirHandle(absPath: string, api: FsApi): FileSystemDirectoryHandle {
+  const norm = absPath.replace(/\\/g, '/')
+  const name = norm.split('/').pop()!
+  return {
+    kind: 'directory',
+    name,
+    isSameEntry: async () => false,
+    values: async function* () {
+      const entries = await api.readdir(norm)
+      for (const e of entries) {
+        yield { kind: e.isDirectory ? 'directory' : 'file', name: e.name } as FileSystemHandle
+      }
+    },
+    getFileHandle: async (fname: string, opts?: { create?: boolean }) => {
+      const fp = `${norm}/${fname}`
+      if (opts?.create) await api.writefile(fp, '')
+      return createFakeFileHandle(fp, api)
+    },
+    getDirectoryHandle: async (dname: string) => createFakeDirHandle(`${norm}/${dname}`, api),
+    removeEntry: async (ename: string) => { await api.unlink(`${norm}/${ename}`) },
+    // Chrome 독자 확장 — 폴더 rename 에 사용
+    move: async (newName: string) => {
+      const parent = norm.split('/').slice(0, -1).join('/')
+      await api.rename(norm, `${parent}/${newName}`)
+    },
+  } as unknown as FileSystemDirectoryHandle
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function useVault() {
   const [vault, setVault] = useState<FolderNode | null>(null)
   const [loading, setLoading] = useState(false)
@@ -86,9 +146,41 @@ export function useVault() {
     }
   }
 
-  // 앱 시작 시 저장된 vault handle 복원
+  // Electron IPC 경로 기반 마운트 (권한 불필요)
+  async function mountVaultFromPath(absPath: string) {
+    const api = window.electronAPI?.fs
+    if (!api) return
+    setLoading(true)
+    try {
+      const norm = absPath.replace(/\\/g, '/')
+      const vaultName = norm.split('/').pop()!
+      const fakeHandle = createFakeDirHandle(norm, api)
+      const children = await buildTree(fakeHandle, vaultName)
+      rootHandleRef.current = fakeHandle
+      setVault({ name: vaultName, path: vaultName, kind: 'directory', handle: fakeHandle, children })
+      setPendingHandle(null)
+    } catch {
+      localStorage.removeItem('papyrus-vault-path')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 앱 시작 시 저장된 vault 복원
   useEffect(() => {
-    loadVaultHandle().then(async handle => {
+    async function tryRestore() {
+      // Electron: localStorage에 절대 경로가 있으면 IPC로 바로 마운트 (권한 불필요)
+      if (window.electronAPI?.fs) {
+        const savedPath = localStorage.getItem('papyrus-vault-path')
+        if (savedPath) {
+          const exists = await window.electronAPI.fs.exists(savedPath)
+          if (exists) { await mountVaultFromPath(savedPath); return }
+          localStorage.removeItem('papyrus-vault-path')
+        }
+      }
+
+      // 폴백: File System Access API handle (브라우저 / 첫 실행)
+      const handle = await loadVaultHandle()
       if (!handle) return
       const h = handle as FileSystemDirectoryHandle & {
         queryPermission(opts: { mode: string }): Promise<string>
@@ -96,20 +188,27 @@ export function useVault() {
       }
       let perm = await h.queryPermission({ mode: 'readwrite' })
       if (perm !== 'granted') {
-        // Electron에서는 useEffect에서 requestPermission 직접 호출 가능
-        // (브라우저와 달리 유저 제스처 불필요). 실패 시 버튼으로 폴백.
         try { perm = await h.requestPermission({ mode: 'readwrite' }) } catch {}
       }
-      if (perm === 'granted') {
-        await mountVault(handle)
-      } else {
-        setPendingHandle(handle)
-      }
-    }).catch(() => {})
+      if (perm === 'granted') await mountVault(handle)
+      else setPendingHandle(handle)
+    }
+    tryRestore().catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 유저 제스처(클릭)에서 호출 — requestPermission 실행
+  // 재연결 버튼 클릭 핸들러
   const reconnectVault = useCallback(async () => {
+    // Electron: IPC 다이얼로그로 폴더 재선택 → 경로 저장 → 이후 자동 복원
+    if (window.electronAPI?.openDirectoryPicker) {
+      const dirPath = await window.electronAPI.openDirectoryPicker()
+      if (!dirPath) return
+      const norm = dirPath.replace(/\\/g, '/')
+      localStorage.setItem('papyrus-vault-path', norm)
+      await mountVaultFromPath(norm)
+      return
+    }
+
+    // 브라우저: requestPermission (유저 제스처 필요)
     if (!pendingHandle) return
     const h = pendingHandle as FileSystemDirectoryHandle & {
       requestPermission(opts: { mode: string }): Promise<string>
@@ -117,13 +216,24 @@ export function useVault() {
     try {
       const req = await h.requestPermission({ mode: 'readwrite' })
       if (req === 'granted') await mountVault(pendingHandle)
-      else setPendingHandle(null) // 거부 → 조용히 해제
+      else setPendingHandle(null)
     } catch {
       setPendingHandle(null)
     }
   }, [pendingHandle])
 
   const openVault = useCallback(async () => {
+    // Electron: 네이티브 다이얼로그로 절대 경로 획득 → localStorage에 저장 → IPC 마운트
+    if (window.electronAPI?.openDirectoryPicker) {
+      const dirPath = await window.electronAPI.openDirectoryPicker()
+      if (!dirPath) return
+      const norm = dirPath.replace(/\\/g, '/')
+      localStorage.setItem('papyrus-vault-path', norm)
+      await mountVaultFromPath(norm)
+      return
+    }
+
+    // 브라우저: File System Access API
     try {
       setLoading(true)
       setError(null)
@@ -181,6 +291,7 @@ export function useVault() {
   }, [refreshVault])
 
   const openFile = useCallback(async () => {
+    localStorage.removeItem('papyrus-vault-path')
     try {
       setLoading(true)
       setError(null)

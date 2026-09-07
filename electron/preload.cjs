@@ -25,4 +25,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   downloadUpdate: () => ipcRenderer.send('download-update'),
   restartAndInstall: () => ipcRenderer.send('restart-and-install'),
   getVersion: () => ipcRenderer.invoke('get-app-version'),
+  openDirectoryPicker: () => ipcRenderer.invoke('open-directory-picker'),
+  fs: {
+    readdir: (p) => ipcRenderer.invoke('fs-readdir', p),
+    readfile: (p) => ipcRenderer.invoke('fs-readfile', p),
+    writefile: (p, content) => ipcRenderer.invoke('fs-writefile', p, content),
+    unlink: (p) => ipcRenderer.invoke('fs-unlink', p),
+    rename: (oldPath, newPath) => ipcRenderer.invoke('fs-rename', oldPath, newPath),
+    exists: (p) => ipcRenderer.invoke('fs-exists', p),
+  },
 })

@@ -1,5 +1,6 @@
-const { app, BrowserWindow, shell, ipcMain, Menu } = require('electron')
+const { app, BrowserWindow, shell, ipcMain, Menu, dialog } = require('electron')
 const path = require('path')
+const fs = require('fs')
 const { autoUpdater } = require('electron-updater')
 
 const isDev = !app.isPackaged
@@ -88,6 +89,7 @@ app.whenReady().then(() => {
     }
 
     autoUpdater.autoDownload = false
+    autoUpdater.autoInstallOnAppQuit = true
 
     autoUpdater.on('update-available', (info) => {
       sendToRenderer('update-available', info.version)
@@ -110,6 +112,26 @@ app.whenReady().then(() => {
 })
 
 ipcMain.handle('get-app-version', () => app.getVersion())
+
+// Native directory picker — returns absolute path or null
+ipcMain.handle('open-directory-picker', async (e) => {
+  const win = BrowserWindow.fromWebContents(e.sender)
+  const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+  return result.canceled ? null : result.filePaths[0]
+})
+
+// Node.js fs operations for persistent vault access (no File System Access API permission needed)
+ipcMain.handle('fs-readdir', async (_, dirPath) => {
+  const entries = await fs.promises.readdir(dirPath, { withFileTypes: true })
+  return entries.map(e => ({ name: e.name, isDirectory: e.isDirectory() }))
+})
+ipcMain.handle('fs-readfile', async (_, filePath) => fs.promises.readFile(filePath, 'utf-8'))
+ipcMain.handle('fs-writefile', async (_, filePath, content) => fs.promises.writeFile(filePath, content, 'utf-8'))
+ipcMain.handle('fs-unlink', async (_, filePath) => fs.promises.unlink(filePath))
+ipcMain.handle('fs-rename', async (_, oldPath, newPath) => fs.promises.rename(oldPath, newPath))
+ipcMain.handle('fs-exists', async (_, dirPath) => {
+  try { await fs.promises.access(dirPath); return true } catch { return false }
+})
 
 ipcMain.on('download-update', () => {
   autoUpdater.downloadUpdate()
