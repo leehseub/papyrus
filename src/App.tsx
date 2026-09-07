@@ -62,7 +62,7 @@ function App() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [langMenuOpen])
-  const { vault, loading, error, openVault, openFile, refreshVault, createFile, deleteFile, updateLinksForRename, moveFile, renameFolder } = useVault()
+  const { vault, loading, error, pendingHandle, reconnectVault, openVault, openFile, refreshVault, createFile, deleteFile, updateLinksForRename, moveFile, renameFolder } = useVault()
   const { width, isOpen, isResizing, toggle, onResizerMouseDown } = useSidebarResize()
   const { saving, save, rename } = useFile()
   const { tabs, activeIdx, activeTab, openTab, switchTab, closeTab, clearTabs, closePaths, updateTabContent, markSaved, updateTabFile } = useTabs()
@@ -564,6 +564,12 @@ function App() {
                       onDragStateChange={setIsFileDragging}
                     />
                   </>
+                ) : pendingHandle ? (
+                  <div className="tree-empty-reconnect">
+                    <button className="reconnect-btn" onClick={reconnectVault}>
+                      {t.reconnectVault(pendingHandle.name)}
+                    </button>
+                  </div>
                 ) : (
                   <p className="tree-empty">{t.noVaultOpen}</p>
                 )}

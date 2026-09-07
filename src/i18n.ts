@@ -14,6 +14,7 @@ export const translations = {
     darkMode: '다크 모드',
     language: '언어 설정',
     filePlaceholder: '파일을 선택해 편집을 시작하세요.',
+    reconnectVault: (name: string) => `"${name}" 다시 열기`,
     renameFolderFail: '폴더 이름 변경 실패 (최신 Chrome 필요)',
     moveFileFail: '이미 같은 이름의 파일이 있습니다',
 
@@ -100,6 +101,7 @@ export const translations = {
     darkMode: 'Dark mode',
     language: 'Language',
     filePlaceholder: 'Select a file to start editing.',
+    reconnectVault: (name: string) => `Reopen "${name}"`,
     renameFolderFail: 'Rename failed (requires Chrome 121+)',
     moveFileFail: 'A file with that name already exists',
 

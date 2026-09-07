@@ -63,42 +63,60 @@ async function buildTree(
   return children
 }
 
-async function requestPermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
-  // queryPermission / requestPermission are File System Access API extensions not yet in TS lib
-  const h = handle as FileSystemDirectoryHandle & {
-    queryPermission(opts: { mode: string }): Promise<string>
-    requestPermission(opts: { mode: string }): Promise<string>
-  }
-  const perm = await h.queryPermission({ mode: 'readwrite' })
-  if (perm === 'granted') return true
-  const req = await h.requestPermission({ mode: 'readwrite' })
-  return req === 'granted'
-}
 
 export function useVault() {
   const [vault, setVault] = useState<FolderNode | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const rootHandleRef = useRef<FileSystemDirectoryHandle | null>(null)
+  // 권한 재확인이 필요한 handle (유저 제스처 필요 → 버튼으로 처리)
+  const [pendingHandle, setPendingHandle] = useState<FileSystemDirectoryHandle | null>(null)
+
+  async function mountVault(handle: FileSystemDirectoryHandle) {
+    setLoading(true)
+    try {
+      rootHandleRef.current = handle
+      const children = await buildTree(handle, handle.name)
+      setVault({ name: handle.name, path: handle.name, kind: 'directory', handle, children })
+      setPendingHandle(null)
+    } catch {
+      // 복원 실패는 조용히 무시
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // 앱 시작 시 저장된 vault handle 복원
   useEffect(() => {
     loadVaultHandle().then(async handle => {
       if (!handle) return
-      const granted = await requestPermission(handle)
-      if (!granted) return
-      setLoading(true)
-      try {
-        rootHandleRef.current = handle
-        const children = await buildTree(handle, handle.name)
-        setVault({ name: handle.name, path: handle.name, kind: 'directory', handle, children })
-      } catch {
-        // 복원 실패는 조용히 무시
-      } finally {
-        setLoading(false)
+      const h = handle as FileSystemDirectoryHandle & {
+        queryPermission(opts: { mode: string }): Promise<string>
+      }
+      const perm = await h.queryPermission({ mode: 'readwrite' })
+      if (perm === 'granted') {
+        await mountVault(handle)
+      } else {
+        // 권한 재확인 필요 — 유저 클릭 시 reconnectVault() 호출
+        setPendingHandle(handle)
       }
     }).catch(() => {})
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 유저 제스처(클릭)에서 호출 — requestPermission 실행
+  const reconnectVault = useCallback(async () => {
+    if (!pendingHandle) return
+    const h = pendingHandle as FileSystemDirectoryHandle & {
+      requestPermission(opts: { mode: string }): Promise<string>
+    }
+    try {
+      const req = await h.requestPermission({ mode: 'readwrite' })
+      if (req === 'granted') await mountVault(pendingHandle)
+      else setPendingHandle(null) // 거부 → 조용히 해제
+    } catch {
+      setPendingHandle(null)
+    }
+  }, [pendingHandle])
 
   const openVault = useCallback(async () => {
     try {
@@ -268,5 +286,5 @@ export function useVault() {
     }
   }, [refreshVault])
 
-  return { vault, loading, error, openVault, openFile, refreshVault, createFile, deleteFile, updateLinksForRename, moveFile, renameFolder }
+  return { vault, loading, error, pendingHandle, reconnectVault, openVault, openFile, refreshVault, createFile, deleteFile, updateLinksForRename, moveFile, renameFolder }
 }

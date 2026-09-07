@@ -231,6 +231,29 @@
 
 .tree-error { color: var(--error); }
 
+.tree-empty-reconnect {
+  padding: 12px 16px;
+}
+.reconnect-btn {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reconnect-btn:hover {
+  background: var(--hover);
+  border-color: var(--accent, #5b8dd9);
+  color: var(--accent, #5b8dd9);
+}
+
 /* New file input */
 .new-file-input-wrap {
   display: flex;
