@@ -418,12 +418,17 @@ function App() {
 
   // Auto-update
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null)
 
   useEffect(() => {
     window.electronAPI?.onUpdateReady?.((version: string) => {
       const skipped = localStorage.getItem('papyrus-skipped-version')
       if (skipped === version) return
       setUpdateVersion(version)
+      setUpdateStatus(null)
+    })
+    window.electronAPI?.onUpdateStatus?.((status: string) => {
+      setUpdateStatus(status)
     })
   }, [])
 
@@ -444,6 +449,9 @@ function App() {
     <LocaleContext.Provider value={t}>
     <div className="app">
       {isElectron && <TitleBar />}
+      {updateStatus && !updateVersion && (
+        <div className="update-status-bar">{updateStatus}</div>
+      )}
       {updateVersion && (
         <div className="update-banner">
           <span className="update-banner-msg">{t.updateReady(updateVersion)}</span>

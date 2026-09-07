@@ -7,6 +7,16 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+/* Update status bar (debug) */
+.update-status-bar {
+  padding: 4px 14px;
+  font-size: 0.75rem;
+  background: var(--bg-sidebar);
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
 /* Update banner */
 .update-banner {
   display: flex;

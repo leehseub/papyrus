@@ -82,16 +82,31 @@ app.whenReady().then(() => {
   })
 
   if (!isDev) {
-    autoUpdater.checkForUpdates()
-
-    autoUpdater.on('update-downloaded', (info) => {
+    function sendToRenderer(channel, data) {
       const win = BrowserWindow.getAllWindows()[0]
-      win?.webContents.send('update-ready', info.version)
+      win?.webContents.send(channel, data)
+    }
+
+    autoUpdater.on('checking-for-update', () => {
+      sendToRenderer('update-status', 'checking')
+    })
+    autoUpdater.on('update-available', (info) => {
+      sendToRenderer('update-status', `available: ${info.version}`)
+    })
+    autoUpdater.on('update-not-available', () => {
+      sendToRenderer('update-status', 'not-available')
+    })
+    autoUpdater.on('download-progress', (p) => {
+      sendToRenderer('update-status', `downloading: ${Math.round(p.percent)}%`)
+    })
+    autoUpdater.on('update-downloaded', (info) => {
+      sendToRenderer('update-ready', info.version)
+    })
+    autoUpdater.on('error', (err) => {
+      sendToRenderer('update-status', `error: ${err.message}`)
     })
 
-    autoUpdater.on('error', () => {
-      // 업데이트 오류는 조용히 무시
-    })
+    autoUpdater.checkForUpdates()
   }
 })
 

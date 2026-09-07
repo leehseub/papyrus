@@ -5,6 +5,7 @@ interface ElectronAPI {
   onMaximizeChange: (cb: (maximized: boolean) => void) => void
   removeMaximizeListener: () => void
   onUpdateReady: (cb: (version: string) => void) => void
+  onUpdateStatus: (cb: (status: string) => void) => void
   restartAndInstall: () => void
 }
 
