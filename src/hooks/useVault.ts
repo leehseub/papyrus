@@ -92,12 +92,17 @@ export function useVault() {
       if (!handle) return
       const h = handle as FileSystemDirectoryHandle & {
         queryPermission(opts: { mode: string }): Promise<string>
+        requestPermission(opts: { mode: string }): Promise<string>
       }
-      const perm = await h.queryPermission({ mode: 'readwrite' })
+      let perm = await h.queryPermission({ mode: 'readwrite' })
+      if (perm !== 'granted') {
+        // Electron에서는 useEffect에서 requestPermission 직접 호출 가능
+        // (브라우저와 달리 유저 제스처 불필요). 실패 시 버튼으로 폴백.
+        try { perm = await h.requestPermission({ mode: 'readwrite' }) } catch {}
+      }
       if (perm === 'granted') {
         await mountVault(handle)
       } else {
-        // 권한 재확인 필요 — 유저 클릭 시 reconnectVault() 호출
         setPendingHandle(handle)
       }
     }).catch(() => {})
