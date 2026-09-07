@@ -223,7 +223,8 @@ export function Editor({ content, saving, isDirty, onUpdate, onSave, onWikilinkC
       },
     },
     onUpdate({ editor }) {
-      const markdown = editor.storage.markdown.getMarkdown()
+      // tiptap-markdown exposes storage.markdown at runtime but not in TS types
+      const markdown = (editor.storage as unknown as { markdown: { getMarkdown(): string } }).markdown.getMarkdown()
       onUpdate(markdown)
     },
   })
@@ -233,7 +234,7 @@ export function Editor({ content, saving, isDirty, onUpdate, onSave, onWikilinkC
     (e: React.KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault()
-        if (editor) onSave(editor.storage.markdown.getMarkdown())
+        if (editor) onSave((editor.storage as unknown as { markdown: { getMarkdown(): string } }).markdown.getMarkdown())
       }
     },
     [editor, onSave]

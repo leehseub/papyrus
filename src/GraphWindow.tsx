@@ -238,7 +238,7 @@ export function GraphWindow() {
         d.fx = ev.x; d.fy = ev.y
         for (const { node, dx, dy } of coNodes) { node.fx = ev.x + dx; node.fy = ev.y + dy }
       })
-      .on('end', (ev, d) => {
+      .on('end', (ev, _d) => {
         if (!ev.active) simulation.alphaTarget(0)
         coNodes = []
         resolveCollisions()
@@ -301,7 +301,7 @@ export function GraphWindow() {
             if (n) { n.fx = (n.fx ?? n.x ?? 0) + ev.dx; n.fy = (n.fy ?? n.y ?? 0) + ev.dy }
           })
         })
-        .on('end', (ev, g) => {
+        .on('end', (ev, _g) => {
           if (!ev.active) simulation.alphaTarget(0)
           resolveCollisions()
         })

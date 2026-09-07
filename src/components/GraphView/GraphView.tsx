@@ -235,7 +235,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
         d.fx = e.x; d.fy = e.y
         for (const { node, dx, dy } of coNodes) { node.fx = e.x + dx; node.fy = e.y + dy }
       })
-      .on('end', (e, d) => {
+      .on('end', (e, _d) => {
         if (!e.active) simulation.alphaTarget(0)
         coNodes = []
         resolveCollisions()
@@ -302,7 +302,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
             if (n) { n.fx = (n.fx ?? n.x ?? 0) + ev.dx; n.fy = (n.fy ?? n.y ?? 0) + ev.dy }
           })
         })
-        .on('end', (ev, g) => {
+        .on('end', (ev, _g) => {
           if (!ev.active) simulation.alphaTarget(0)
           resolveCollisions()
         })

@@ -43,7 +43,7 @@ export function Tooltip({ content, children }: TooltipProps) {
         onMouseEnter: handleMouseEnter,
         onMouseLeave: handleMouseLeave,
         title: undefined,
-      })}
+      } as React.HTMLAttributes<HTMLElement>)}
       {anchor && createPortal(
         <div
           ref={tooltipRef}

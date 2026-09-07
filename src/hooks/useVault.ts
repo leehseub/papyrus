@@ -64,9 +64,14 @@ async function buildTree(
 }
 
 async function requestPermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
-  const perm = await handle.queryPermission({ mode: 'readwrite' })
+  // queryPermission / requestPermission are File System Access API extensions not yet in TS lib
+  const h = handle as FileSystemDirectoryHandle & {
+    queryPermission(opts: { mode: string }): Promise<string>
+    requestPermission(opts: { mode: string }): Promise<string>
+  }
+  const perm = await h.queryPermission({ mode: 'readwrite' })
   if (perm === 'granted') return true
-  const req = await handle.requestPermission({ mode: 'readwrite' })
+  const req = await h.requestPermission({ mode: 'readwrite' })
   return req === 'granted'
 }
 
@@ -99,7 +104,7 @@ export function useVault() {
     try {
       setLoading(true)
       setError(null)
-      const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' })
+      const dirHandle = await (window as unknown as { showDirectoryPicker(opts?: { mode?: string }): Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'readwrite' })
       rootHandleRef.current = dirHandle
       const children = await buildTree(dirHandle, dirHandle.name)
       setVault({ name: dirHandle.name, path: dirHandle.name, kind: 'directory', handle: dirHandle, children })
@@ -156,7 +161,7 @@ export function useVault() {
     try {
       setLoading(true)
       setError(null)
-      const [fileHandle] = await window.showOpenFilePicker({
+      const [fileHandle] = await (window as unknown as { showOpenFilePicker(opts?: object): Promise<FileSystemFileHandle[]> }).showOpenFilePicker({
         types: [{ description: 'Markdown', accept: { 'text/markdown': ['.md'] } }],
         multiple: false,
       })
@@ -226,7 +231,6 @@ export function useVault() {
 
       // path 기반 wikilink 업데이트: [[folder/file]] → [[newFolder/file]]
       // 파일명은 동일하므로 경로가 바뀐 경우만 처리
-      const vaultRoot = file.path.split('/')[0]
       const oldWikiPath = file.path.replace(/\.md$/, '').split('/').slice(1).join('/')
       const newWikiPath = `${targetPath}/${file.name}`.replace(/\.md$/, '').split('/').slice(1).join('/')
       if (oldWikiPath !== newWikiPath) {

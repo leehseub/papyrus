@@ -170,6 +170,6 @@ export const translations = {
     skipVersion: 'Skip this version',
     remindLater: 'Later',
   },
-} as const
+}
 
 export type Translations = typeof translations.ko

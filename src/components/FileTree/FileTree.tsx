@@ -79,7 +79,7 @@ function TreeNode({ node, selectedPath, onFileSelect, onFileDelete, onRenameFold
     function handleDelete(e: React.MouseEvent) {
       e.stopPropagation()
       if (!canDelete) return
-      onFileDelete!(node)
+      onFileDelete!(node as FileNode)
     }
 
     return (
