@@ -5,6 +5,19 @@ const { autoUpdater } = require('electron-updater')
 
 const isDev = !app.isPackaged
 
+// 단일 인스턴스 보장 — 이미 실행 중이면 기존 창 포커스 후 종료
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getAllWindows()[0]
+    if (!win) return
+    if (win.isMinimized()) win.restore()
+    win.focus()
+  })
+}
+
 // Remove default application menu
 Menu.setApplicationMenu(null)
 
