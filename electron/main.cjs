@@ -1,5 +1,6 @@
 const { app, BrowserWindow, shell, ipcMain, Menu } = require('electron')
 const path = require('path')
+const { autoUpdater } = require('electron-updater')
 
 const isDev = !app.isPackaged
 
@@ -79,6 +80,23 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  if (!isDev) {
+    autoUpdater.checkForUpdates()
+
+    autoUpdater.on('update-downloaded', (info) => {
+      const win = BrowserWindow.getAllWindows()[0]
+      win?.webContents.send('update-ready', info.version)
+    })
+
+    autoUpdater.on('error', () => {
+      // 업데이트 오류는 조용히 무시
+    })
+  }
+})
+
+ipcMain.on('restart-and-install', () => {
+  autoUpdater.quitAndInstall()
 })
 
 app.on('window-all-closed', () => {

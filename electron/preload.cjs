@@ -10,4 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeMaximizeListener: () => {
     ipcRenderer.removeAllListeners('maximize-change')
   },
+  onUpdateReady: (cb) => {
+    ipcRenderer.on('update-ready', (_, version) => cb(version))
+  },
+  restartAndInstall: () => ipcRenderer.send('restart-and-install'),
 })

@@ -416,10 +416,44 @@ function App() {
 
   const isElectron = !!window.electronAPI
 
+  // Auto-update
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+
+  useEffect(() => {
+    window.electronAPI?.onUpdateReady?.((version: string) => {
+      const skipped = localStorage.getItem('papyrus-skipped-version')
+      if (skipped === version) return
+      setUpdateVersion(version)
+    })
+  }, [])
+
+  function handleRestartAndInstall() {
+    window.electronAPI?.restartAndInstall()
+  }
+
+  function handleSkipVersion() {
+    if (updateVersion) localStorage.setItem('papyrus-skipped-version', updateVersion)
+    setUpdateVersion(null)
+  }
+
+  function handleRemindLater() {
+    setUpdateVersion(null)
+  }
+
   return (
     <LocaleContext.Provider value={t}>
     <div className="app">
       {isElectron && <TitleBar />}
+      {updateVersion && (
+        <div className="update-banner">
+          <span className="update-banner-msg">{t.updateReady(updateVersion)}</span>
+          <div className="update-banner-actions">
+            <button className="update-btn update-btn-primary" onClick={handleRestartAndInstall}>{t.restartToUpdate}</button>
+            <button className="update-btn" onClick={handleRemindLater}>{t.remindLater}</button>
+            <button className="update-btn update-btn-skip" onClick={handleSkipVersion}>{t.skipVersion}</button>
+          </div>
+        </div>
+      )}
       <div className="app-body">
         <aside
           className={`sidebar${isOpen ? '' : ' sidebar-closed'}${isResizing ? '' : ' sidebar-animated'}`}

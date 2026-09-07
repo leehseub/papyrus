@@ -4,6 +4,8 @@ interface ElectronAPI {
   close: () => void
   onMaximizeChange: (cb: (maximized: boolean) => void) => void
   removeMaximizeListener: () => void
+  onUpdateReady: (cb: (version: string) => void) => void
+  restartAndInstall: () => void
 }
 
 declare global {

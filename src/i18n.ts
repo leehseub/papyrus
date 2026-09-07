@@ -77,6 +77,12 @@ export const translations = {
     deleteConnection: '연결 삭제',
     currentFile: '현재 파일',
     note: '노트',
+
+    // Update banner
+    updateReady: (v: string) => `v${v} 업데이트 준비 완료`,
+    restartToUpdate: '재시작하여 업데이트',
+    skipVersion: '이번 버전 건너뛰기',
+    remindLater: '나중에',
   },
 
   en: {
@@ -157,6 +163,12 @@ export const translations = {
     deleteConnection: 'Delete connection',
     currentFile: 'Current file',
     note: 'Note',
+
+    // Update banner
+    updateReady: (v: string) => `v${v} update ready`,
+    restartToUpdate: 'Restart to update',
+    skipVersion: 'Skip this version',
+    remindLater: 'Later',
   },
 } as const
 
