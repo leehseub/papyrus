@@ -1,4 +1,6 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, useMemo } from 'react'
+import { useT } from '../../contexts/LocaleContext'
+import { useLocale } from '../../hooks/useLocale'
 import { useEditor, EditorContent, Extension } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -6,7 +8,7 @@ import { Markdown } from 'tiptap-markdown'
 import { TextSelection } from '@tiptap/pm/state'
 import { WikilinkDecorator } from '../../extensions/WikilinkDecorator'
 import { TagDecorator } from '../../extensions/TagDecorator'
-import { SlashCommandExtension } from '../../extensions/SlashCommand/SlashCommandExtension'
+import { createSlashCommandExtension } from '../../extensions/SlashCommand/SlashCommandExtension'
 import { AutoPair } from '../../extensions/AutoPair'
 import { Collapsible, CollapsibleSummary, CollapsibleContent } from '../../extensions/Collapsible/CollapsibleExtension'
 import { TaskList } from '@tiptap/extension-task-list'
@@ -127,6 +129,9 @@ interface EditorProps {
 }
 
 export function Editor({ content, saving, isDirty, onUpdate, onSave, onWikilinkClick }: EditorProps) {
+  const t = useT()
+  const { locale } = useLocale()
+  const SlashCommandExtension = useMemo(() => createSlashCommandExtension(locale), [locale])
   const [tableMenuPos, setTableMenuPos] = useState<TableMenuPos | null>(null)
   const hoveredTableRef = useRef<HTMLElement | null>(null)
   const hideTableMenuTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -171,7 +176,7 @@ export function Editor({ content, saving, isDirty, onUpdate, onSave, onWikilinkC
       Markdown.configure({ linkify: false }),
       Placeholder.configure({
         placeholder: ({ node }) => {
-          if (node.type.name === 'heading' && node.attrs.level === 1) return '제목 없음'
+          if (node.type.name === 'heading' && node.attrs.level === 1) return t.titlePlaceholder
           return ''
         },
         showOnlyCurrent: true,
@@ -235,11 +240,11 @@ export function Editor({ content, saving, isDirty, onUpdate, onSave, onWikilinkC
   )
 
   const tableActions: { label: string; action: () => void; danger?: boolean }[] = [
-    { label: '행 추가', action: () => editor?.chain().focus().addRowAfter().run() },
-    { label: '열 추가', action: () => editor?.chain().focus().addColumnAfter().run() },
-    { label: '행 삭제', action: () => editor?.chain().focus().deleteRow().run() },
-    { label: '열 삭제', action: () => editor?.chain().focus().deleteColumn().run() },
-    { label: '테이블 삭제', action: () => { editor?.chain().focus().deleteTable().run(); setTableMenuPos(null) }, danger: true },
+    { label: t.addRow,      action: () => editor?.chain().focus().addRowAfter().run() },
+    { label: t.addColumn,   action: () => editor?.chain().focus().addColumnAfter().run() },
+    { label: t.deleteRow,   action: () => editor?.chain().focus().deleteRow().run() },
+    { label: t.deleteColumn,action: () => editor?.chain().focus().deleteColumn().run() },
+    { label: t.deleteTable, action: () => { editor?.chain().focus().deleteTable().run(); setTableMenuPos(null) }, danger: true },
   ]
 
   return (
@@ -251,7 +256,7 @@ export function Editor({ content, saving, isDirty, onUpdate, onSave, onWikilinkC
     >
       <EditorContent editor={editor} style={{ width: '100%', maxWidth: 720 }} />
       <div className={`editor-statusbar${saving ? ' saving' : ''}`}>
-        {saving ? '저장 중...' : isDirty ? '● 저장되지 않음' : '저장됨'}
+        {saving ? t.saving : isDirty ? t.unsaved : t.saved}
       </div>
       {tableMenuPos && (
         <div

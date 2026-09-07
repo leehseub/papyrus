@@ -2,6 +2,8 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { TitleBar } from './components/TitleBar/TitleBar'
 import { useTheme } from './hooks/useTheme'
 import { useLocale, type Locale } from './hooks/useLocale'
+import { LocaleContext } from './contexts/LocaleContext'
+import { translations } from './i18n'
 import { useVault } from './hooks/useVault'
 import { useSidebarResize } from './hooks/useSidebarResize'
 import { useFile } from './hooks/useFile'
@@ -44,6 +46,9 @@ function serializeGraphData(gd: GraphData) {
 function App() {
   const { theme, toggle: toggleTheme } = useTheme()
   const { locale, setLocale } = useLocale()
+  const t = translations[locale]
+  const tRef = useRef(t)
+  tRef.current = t
   const [langMenuOpen, setLangMenuOpen] = useState(false)
   const langMenuRef = useRef<HTMLDivElement>(null)
 
@@ -404,7 +409,7 @@ function App() {
       const tabIdx = tabs.findIndex(t => t.file.path === file.path)
       if (tabIdx >= 0) updateTabFile(tabIdx, moved)
     } else {
-      setMoveErrorMsg('이미 같은 이름의 파일이 있습니다')
+      setMoveErrorMsg(tRef.current.moveFileFail)
       setTimeout(() => setMoveErrorMsg(null), 3000)
     }
   }
@@ -412,6 +417,7 @@ function App() {
   const isElectron = !!window.electronAPI
 
   return (
+    <LocaleContext.Provider value={t}>
     <div className="app">
       {isElectron && <TitleBar />}
       <div className="app-body">
@@ -427,7 +433,7 @@ function App() {
                   <button
                     className={`search-toggle-btn${sidebarMode === 'search' ? ' active' : ''}`}
                     onClick={handleSearchToggle}
-                    title="검색"
+                    title={t.search}
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                       <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
@@ -436,7 +442,7 @@ function App() {
                   <button
                     className={`search-toggle-btn${sidebarMode === 'tags' ? ' active' : ''}`}
                     onClick={handleTagsToggle}
-                    title="태그"
+                    title={t.tagsNav}
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                       <path d="M2 2a1 1 0 0 1 1-1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 2 6.586V2zm3.5 4a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
@@ -445,7 +451,7 @@ function App() {
                   <button
                     className={`search-toggle-btn${showGraph ? ' active' : ''}`}
                     onClick={() => setShowGraph(v => !v)}
-                    title="그래프 뷰"
+                    title={t.graphViewNav}
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                       <circle cx="3" cy="8" r="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
@@ -460,10 +466,10 @@ function App() {
               {sidebarMode === 'tree' && (
                 <div className="sidebar-actions">
                   <button className="open-vault-btn" onClick={handleOpenVault} disabled={loading}>
-                    {loading ? '여는 중...' : '폴더 열기'}
+                    {loading ? t.openingVault : t.openFolder}
                   </button>
                   <button className="open-file-btn" onClick={handleOpenFile} disabled={loading}>
-                    파일 열기
+                    {t.openFile}
                   </button>
                 </div>
               )}
@@ -485,13 +491,13 @@ function App() {
                       <p className="vault-name">{vault.name}</p>
                       <div className="vault-actions">
                         {vault.name !== '열린 파일' && (
-                          <button className="refresh-btn" onClick={handleCreateStart} disabled={loading} title="새 파일">
+                          <button className="refresh-btn" onClick={handleCreateStart} disabled={loading} title={t.newFile}>
                             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                               <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
                             </svg>
                           </button>
                         )}
-                        <button className="refresh-btn" onClick={refreshVault} disabled={loading} title="새로고침">
+                        <button className="refresh-btn" onClick={refreshVault} disabled={loading} title={t.refresh}>
                           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                             <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.418A6 6 0 1 1 8 2v1z"/>
                             <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
@@ -509,7 +515,7 @@ function App() {
                         if (ok) {
                           closePaths(new Set(tabs.filter(t => t.file.path.startsWith(oldPath + '/')).map(t => t.file.path)))
                         } else {
-                          setMoveErrorMsg('폴더 이름 변경 실패 (최신 Chrome 필요)')
+                          setMoveErrorMsg(tRef.current.renameFolderFail)
                           setTimeout(() => setMoveErrorMsg(null), 3000)
                         }
                       }}
@@ -525,7 +531,7 @@ function App() {
                     />
                   </>
                 ) : (
-                  <p className="tree-empty">열린 Vault가 없습니다.</p>
+                  <p className="tree-empty">{t.noVaultOpen}</p>
                 )}
               </div>
             ) : sidebarMode === 'search' ? (
@@ -551,7 +557,7 @@ function App() {
               <button
                 className="theme-icon-btn"
                 onClick={toggleTheme}
-                title={theme === 'dark' ? (locale === 'ko' ? '라이트 모드' : 'Light mode') : (locale === 'ko' ? '다크 모드' : 'Dark mode')}
+                title={theme === 'dark' ? t.lightMode : t.darkMode}
               >
                 {theme === 'dark' ? (
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -585,7 +591,7 @@ function App() {
                 <button
                   className="lang-btn"
                   onClick={() => setLangMenuOpen(v => !v)}
-                  title={locale === 'ko' ? '언어 설정' : 'Language'}
+                  title={t.language}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"/>
@@ -637,7 +643,7 @@ function App() {
                 onWikilinkClick={handleWikilinkClick}
               />
             ) : (
-              <p className="placeholder">파일을 선택해 편집을 시작하세요.</p>
+              <p className="placeholder">{t.filePlaceholder}</p>
             )}
           </main>
 
@@ -677,12 +683,12 @@ function App() {
         <div className="dialog-overlay" onClick={() => setDeleteConfirm(null)}>
           <div className="dialog" onClick={e => e.stopPropagation()}>
             <p className="dialog-message">
-              "{deleteConfirm.name.replace(/\.md$/, '')}" 파일을 삭제하시겠습니까?<br />
-              <span style={{ fontSize: '0.85em', opacity: 0.7 }}>이 작업은 되돌릴 수 없습니다.</span>
+              {t.deleteFileMsg(deleteConfirm.name.replace(/\.md$/, ''))}<br />
+              <span style={{ fontSize: '0.85em', opacity: 0.7 }}>{t.deleteFileWarning}</span>
             </p>
             <div className="dialog-actions">
-              <button className="dialog-btn dialog-discard" onClick={handleDeleteConfirm}>삭제</button>
-              <button className="dialog-btn dialog-cancel" onClick={() => setDeleteConfirm(null)}>취소</button>
+              <button className="dialog-btn dialog-discard" onClick={handleDeleteConfirm}>{t.delete}</button>
+              <button className="dialog-btn dialog-cancel" onClick={() => setDeleteConfirm(null)}>{t.cancel}</button>
             </div>
           </div>
         </div>
@@ -692,17 +698,18 @@ function App() {
         <div className="dialog-overlay" onClick={handleConfirmCancel}>
           <div className="dialog" onClick={e => e.stopPropagation()}>
             <p className="dialog-message">
-              "{tabs.find(t => t.file.path === closeConfirm.path)?.file.name.replace(/\.md$/, '') ?? '파일'}"의 변경사항을 저장하시겠습니까?
+              {t.saveChangesMsg(tabs.find(tab => tab.file.path === closeConfirm.path)?.file.name.replace(/\.md$/, '') ?? '')}
             </p>
             <div className="dialog-actions">
-              <button className="dialog-btn dialog-save" onClick={handleConfirmSave}>저장</button>
-              <button className="dialog-btn dialog-discard" onClick={handleConfirmDiscard}>저장 안 함</button>
-              <button className="dialog-btn dialog-cancel" onClick={handleConfirmCancel}>취소</button>
+              <button className="dialog-btn dialog-save" onClick={handleConfirmSave}>{t.save}</button>
+              <button className="dialog-btn dialog-discard" onClick={handleConfirmDiscard}>{t.dontSave}</button>
+              <button className="dialog-btn dialog-cancel" onClick={handleConfirmCancel}>{t.cancel}</button>
             </div>
           </div>
         </div>
       )}
     </div>
+    </LocaleContext.Provider>
   )
 }
 

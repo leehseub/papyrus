@@ -1,4 +1,5 @@
 import type { SearchResult, FileNode } from '../../types'
+import { useT } from '../../contexts/LocaleContext'
 import './Search.css'
 
 interface SearchProps {
@@ -25,6 +26,7 @@ function HighlightedExcerpt({ text, query }: { text: string; query: string }) {
 }
 
 export function Search({ query, results, searching, selectedPath, onQueryChange, onFileSelect }: SearchProps) {
+  const t = useT()
   return (
     <div className="search-panel">
       <div className="search-input-wrap">
@@ -34,7 +36,7 @@ export function Search({ query, results, searching, selectedPath, onQueryChange,
         <input
           className="search-input"
           type="text"
-          placeholder="검색..."
+          placeholder={t.searchPlaceholder}
           value={query}
           onChange={e => onQueryChange(e.target.value)}
           autoFocus
@@ -45,9 +47,9 @@ export function Search({ query, results, searching, selectedPath, onQueryChange,
       </div>
 
       <div className="search-results">
-        {searching && <p className="search-status">검색 중...</p>}
+        {searching && <p className="search-status">{t.searching}</p>}
         {!searching && query && results.length === 0 && (
-          <p className="search-status">결과 없음</p>
+          <p className="search-status">{t.noResults}</p>
         )}
         {results.map(result => (
           <div

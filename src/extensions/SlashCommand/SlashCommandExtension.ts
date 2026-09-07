@@ -1,13 +1,15 @@
 import { Extension } from '@tiptap/core'
 import Suggestion from '@tiptap/suggestion'
 import { createRoot } from 'react-dom/client'
-import { createElement, useRef } from 'react'
+import { createElement } from 'react'
 import { SlashMenu } from './SlashMenu'
 import type { SlashMenuRef } from './SlashMenu'
-import { filterCommands } from './commands'
+import { filterCommands, getCommands } from './commands'
 import type { SlashCommand } from './commands'
+import type { Locale } from '../../hooks/useLocale'
 
-export const SlashCommandExtension = Extension.create({
+export function createSlashCommandExtension(locale: Locale) {
+  return Extension.create({
   name: 'slashCommand',
 
   addProseMirrorPlugins() {
@@ -19,7 +21,7 @@ export const SlashCommandExtension = Extension.create({
         startOfLine: false,
 
         items({ query }) {
-          return filterCommands(query)
+          return filterCommands(query, locale)
         },
 
         render() {
@@ -118,7 +120,7 @@ export const SlashCommandExtension = Extension.create({
         },
 
         command({ editor, range, props }) {
-          const item = filterCommands('').find(c => c.title === props.id)
+          const item = getCommands(locale).find(c => c.title === props.id)
           if (!item) return
           editor.chain().focus().deleteRange(range).run()
           item.action(editor)
@@ -127,3 +129,4 @@ export const SlashCommandExtension = Extension.create({
     ]
   },
 })
+}

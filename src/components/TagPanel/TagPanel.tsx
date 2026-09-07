@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { TagMap } from '../../hooks/useTagIndex'
 import type { FileNode } from '../../types'
 import { Tooltip } from '../Tooltip/Tooltip'
+import { useT } from '../../contexts/LocaleContext'
 import './TagPanel.css'
 
 interface TagPanelProps {
@@ -13,6 +14,7 @@ interface TagPanelProps {
 }
 
 export function TagPanel({ tagMap, indexing, selectedPath, onBuildIndex, onFileSelect }: TagPanelProps) {
+  const t = useT()
   const [activeTag, setActiveTag] = useState<string | null>(null)
 
   const files = activeTag ? (tagMap.get(activeTag) ?? []) : []
@@ -21,19 +23,19 @@ export function TagPanel({ tagMap, indexing, selectedPath, onBuildIndex, onFileS
     <div className="tag-panel">
       {/* 태그 목록 헤더 */}
       <div className="tag-panel-header">
-        <span className="tag-panel-title">태그</span>
+        <span className="tag-panel-title">{t.tags}</span>
         <button
           className="tag-refresh-btn"
           onClick={onBuildIndex}
           disabled={indexing}
-          title="태그 인덱스 갱신"
+          title={t.refreshTagIndex}
         >
-          {indexing ? '스캔 중...' : '스캔'}
+          {indexing ? t.scanning : t.scan}
         </button>
       </div>
 
       {tagMap.size === 0 && !indexing && (
-        <p className="tag-empty">"스캔" 버튼으로 태그를 불러오세요.</p>
+        <p className="tag-empty">{t.scanHint}</p>
       )}
 
       {/* 태그 목록 */}

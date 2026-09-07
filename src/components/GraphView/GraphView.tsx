@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState, forwardRef, useImperativeHandle } from 'react'
+import { useT } from '../../contexts/LocaleContext'
 import * as d3 from 'd3'
 import type { GraphData, GraphNode, GraphEdge } from '../../hooks/useGraphData'
 import type { NodeGroup } from '../../hooks/useGroups'
@@ -78,6 +79,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
     },
   }), [])
 
+  const t = useT()
   const [selectionMode, setSelectionMode] = useState(false)
   const selectionModeRef = useRef(false)
   const [selectedNodes, setSelectedNodes] = useState(new Set<string>())
@@ -527,7 +529,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
   }, [highlightGroupId, groups, selectedPath, selectedNodes])
 
   function handleCreateGroup() {
-    const name = newGroupName.trim() || `그룹 ${groups.length + 1}`
+    const name = newGroupName.trim() || `${t.groups} ${groups.length + 1}`
     onCreateGroup(name, [...selectedNodes])
     setSelectedNodes(new Set()); setNewGroupName(''); setShowGroupForm(false)
   }
@@ -537,12 +539,12 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
       <div className="graph-resizer" onMouseDown={onResizerMouseDown} />
 
       <div className="graph-header">
-        <span className="graph-title">그래프 뷰</span>
+        <span className="graph-title">{t.graphView}</span>
         <div className="graph-header-actions">
           <button className="graph-build-btn" onClick={onBuild} disabled={building}>
-            {building ? '분석 중...' : '분석'}
+            {building ? t.analyzing : t.analyze}
           </button>
-          <Tooltip content={selectionMode ? '선택 모드 끄기 (Esc)' : '선택 모드 (S / Ctrl+클릭)'}>
+          <Tooltip content={selectionMode ? t.selectionModeOn : t.selectionModeOff}>
             <button
               className={`graph-float-btn${selectionMode ? ' active' : ''}`}
               onClick={() => setSelectionMode(v => !v)}
@@ -553,7 +555,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
               </svg>
             </button>
           </Tooltip>
-          <Tooltip content="새 창으로 열기">
+          <Tooltip content={t.openInWindow}>
             <button className="graph-float-btn" onClick={onOpenInWindow}>
               <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M1.5 1h6v1.5h-4v11h11v-4H16V14a1.5 1.5 0 0 1-1.5 1.5H1.5A1.5 1.5 0 0 1 0 14V2.5A1.5 1.5 0 0 1 1.5 1z"/>
@@ -580,16 +582,16 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
           setSelectedNodes(new Set())
         }}
       >
-        {building && <p className="graph-status">파일 분석 중...</p>}
-        {!building && !graphData && <p className="graph-status">분석 버튼으로 그래프를 생성하세요.</p>}
-        {!building && graphData?.nodes.length === 0 && <p className="graph-status">파일이 없습니다.</p>}
+        {building && <p className="graph-status">{t.buildingGraph}</p>}
+        {!building && !graphData && <p className="graph-status">{t.emptyGraph}</p>}
+        {!building && graphData?.nodes.length === 0 && <p className="graph-status">{t.noFiles}</p>}
         <div ref={selRectDivRef} className="sel-rect-overlay" style={{ display: 'none' }} />
         <svg ref={svgRef} className={`graph-svg${selectionMode ? ' selection-mode' : ''}`} />
       </div>
 
       {selectedNodes.size > 0 && (
         <div className="graph-selection-bar">
-          <span className="selection-count">{selectedNodes.size}개 선택됨</span>
+          <span className="selection-count">{t.selectedCount(selectedNodes.size)}</span>
           <div className="selection-actions">
             {showGroupForm ? (
               <>
@@ -598,16 +600,16 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
                   value={newGroupName}
                   onChange={e => setNewGroupName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleCreateGroup(); if (e.key === 'Escape') setShowGroupForm(false) }}
-                  placeholder="그룹 이름"
+                  placeholder={t.groupNamePlaceholder}
                   autoFocus
                 />
-                <button className="graph-build-btn" onClick={handleCreateGroup}>확인</button>
-                <button className="graph-float-btn" onClick={() => setShowGroupForm(false)}>취소</button>
+                <button className="graph-build-btn" onClick={handleCreateGroup}>{t.confirm}</button>
+                <button className="graph-float-btn" onClick={() => setShowGroupForm(false)}>{t.cancel}</button>
               </>
             ) : (
               <>
-                <button className="graph-build-btn" onClick={() => setShowGroupForm(true)}>그룹 만들기</button>
-                <button className="graph-float-btn" onClick={() => setSelectedNodes(new Set())}>해제</button>
+                <button className="graph-build-btn" onClick={() => setShowGroupForm(true)}>{t.createGroup}</button>
+                <button className="graph-float-btn" onClick={() => setSelectedNodes(new Set())}>{t.deselect}</button>
               </>
             )}
           </div>
@@ -617,13 +619,13 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
       {groups.length > 0 && (
         <div className="graph-groups">
           <p className="graph-groups-title">
-            {linkSource ? <span className="link-mode-label">→ <b>{linkSource.name}</b> 연결 대상 선택</span> : '그룹'}
+            {linkSource ? <span className="link-mode-label">{t.connectTarget(linkSource.name)}</span> : t.groups}
             {linkSource && (
-              <button className="group-link-cancel-btn" onClick={() => setLinkSource(null)}>취소</button>
+              <button className="group-link-cancel-btn" onClick={() => setLinkSource(null)}>{t.cancel}</button>
             )}
           </p>
           {linkSource && (
-            <p className="link-mode-hint">그룹을 선택하거나 캔버스의 노드를 클릭하세요</p>
+            <p className="link-mode-hint">{t.linkModeHint}</p>
           )}
           <ul className="group-list">
             {groups.map(g => (
@@ -639,18 +641,18 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
               >
                 <span className="group-dot" style={{ background: g.color }} />
                 <span className="group-name">{g.name}</span>
-                {!linkSource && <span className="group-count">{g.paths.length}개</span>}
+                {!linkSource && <span className="group-count">{t.nodeCount(g.paths.length)}</span>}
                 {linkSource ? (
-                  linkSource.id !== g.id && <span className="group-connect-hint">연결</span>
+                  linkSource.id !== g.id && <span className="group-connect-hint">{t.connect}</span>
                 ) : (
                   <>
-                    <Tooltip content="연결 만들기">
+                    <Tooltip content={t.createLink}>
                       <button
                         className="group-link-btn"
                         onClick={e => { e.stopPropagation(); setLinkSource({ id: g.id, name: g.name }) }}
                       >→</button>
                     </Tooltip>
-                    <Tooltip content="그룹 삭제">
+                    <Tooltip content={t.deleteGroup}>
                       <button className="group-delete-btn" onClick={() => onDeleteGroup(g.id)}>×</button>
                     </Tooltip>
                   </>
@@ -663,7 +665,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
 
       {groupLinks.length > 0 && (
         <div className="graph-groups">
-          <p className="graph-groups-title">연결</p>
+          <p className="graph-groups-title">{t.connections}</p>
           <ul className="group-list">
             {groupLinks.map(l => {
               const fromName = groups.find(g => g.id === l.fromId)?.name ?? '?'
@@ -673,7 +675,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
               return (
                 <li key={l.id} className="group-item">
                   <span className="group-link-label">{fromName} → {toName}</span>
-                  <Tooltip content="연결 삭제">
+                  <Tooltip content={t.deleteConnection}>
                     <button className="group-delete-btn" onClick={() => onDeleteGroupLink(l.id)}>×</button>
                   </Tooltip>
                 </li>
@@ -684,8 +686,8 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
       )}
 
       <div className="graph-legend">
-        <span className="legend-item legend-current">현재 파일</span>
-        <span className="legend-item legend-normal">노트</span>
+        <span className="legend-item legend-current">{t.currentFile}</span>
+        <span className="legend-item legend-normal">{t.note}</span>
         <span className="legend-item legend-edge">링크</span>
         <span className="legend-item legend-selected">선택</span>
       </div>

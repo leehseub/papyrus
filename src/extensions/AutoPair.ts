@@ -22,6 +22,16 @@ export const AutoPair = Extension.create({
             const { state, dispatch } = view
             const { from, to, empty } = state.selection
 
+            // Backspace on empty pair → delete both brackets
+            if (event.key === 'Backspace' && empty && from > 0) {
+              const prevChar = state.doc.textBetween(from - 1, from)
+              const nextChar = state.doc.textBetween(from, Math.min(from + 1, state.doc.content.size))
+              if (PAIRS[prevChar] && PAIRS[prevChar] === nextChar) {
+                dispatch(state.tr.delete(from - 1, from + 1))
+                return true
+              }
+            }
+
             // Skip-over closing char if next char already matches
             if (CLOSERS.has(event.key)) {
               if (empty) {
