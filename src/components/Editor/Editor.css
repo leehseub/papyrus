@@ -1,0 +1,316 @@
+.editor-wrap {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 64px 80px;
+}
+
+.editor-statusbar {
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  font-size: 11px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.editor-statusbar.saving { color: var(--saving); }
+
+/* TipTap ProseMirror */
+.tiptap-editor {
+  width: 100%;
+  max-width: 720px;
+  outline: none;
+  caret-color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--editor-text);
+}
+
+.tiptap-editor p { margin: 0 0 8px; }
+
+.tiptap-editor h1,
+.tiptap-editor h2,
+.tiptap-editor h3,
+.tiptap-editor h4 {
+  color: var(--editor-heading);
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 24px 0 8px;
+}
+
+.tiptap-editor h1 { font-size: 2em; }
+.tiptap-editor h2 { font-size: 1.5em; }
+.tiptap-editor h3 { font-size: 1.25em; }
+.tiptap-editor h4 { font-size: 1em; }
+
+.tiptap-editor strong { color: var(--editor-heading); }
+.tiptap-editor em { opacity: 0.85; }
+
+.tiptap-editor code {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 0.875em;
+  background: var(--editor-code-bg);
+  color: var(--editor-code-fg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.tiptap-editor pre {
+  background: var(--editor-pre-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.tiptap-editor pre code { background: none; padding: 0; color: var(--editor-text); }
+
+.tiptap-editor blockquote {
+  border-left: 3px solid var(--border);
+  margin: 12px 0;
+  padding: 4px 16px;
+  color: var(--editor-quote);
+}
+
+.tiptap-editor ul,
+.tiptap-editor ol { padding-left: 24px; margin: 8px 0; }
+
+.tiptap-editor li { margin: 2px 0; }
+
+.tiptap-editor hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+.tiptap-editor a { color: var(--link-color); text-decoration: underline; }
+
+/* Tag */
+.tag-inline {
+  color: var(--tag-color);
+  font-size: 0.9em;
+  border-radius: 3px;
+  padding: 1px 2px;
+  cursor: default;
+}
+
+/* Wikilink */
+.wikilink {
+  color: var(--link-color);
+  background: var(--link-bg);
+  border-radius: 3px;
+  padding: 1px 3px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.wikilink:hover {
+  background: var(--link-bg-hover);
+  text-decoration: underline;
+}
+
+/* 첫 번째 H1: 문서 제목 */
+.tiptap-editor > h1:first-child {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  border: none;
+}
+
+/* Placeholder: 내용이 없는 문서에서 현재 노드에만 표시 */
+.tiptap-editor h1.is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--editor-empty);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* ── Task List (체크리스트) ─────────────────────────────────────── */
+
+.tiptap-editor ul[data-type="taskList"] {
+  padding-left: 4px;
+  margin: 8px 0;
+  list-style: none;
+}
+
+.tiptap-editor ul[data-type="taskList"] li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 3px 0;
+}
+
+.tiptap-editor ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  padding-top: 5px;
+}
+
+/* Hide native checkbox, use custom design */
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--border-input, var(--border));
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  margin: 0;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:hover {
+  border-color: var(--accent);
+}
+
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.tiptap-editor ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.tiptap-editor ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--text-dim);
+  text-decoration: line-through;
+}
+
+/* Nested task list */
+.tiptap-editor ul[data-type="taskList"] ul[data-type="taskList"] {
+  margin: 2px 0;
+  padding-left: 20px;
+}
+
+/* ── Table (테이블) ──────────────────────────────────────────────── */
+
+.tiptap-editor .tableWrapper {
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.tiptap-editor table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.tiptap-editor th,
+.tiptap-editor td {
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  vertical-align: top;
+  min-width: 80px;
+  position: relative;
+}
+
+.tiptap-editor th {
+  background: var(--bg-input);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.tiptap-editor td p,
+.tiptap-editor th p {
+  margin: 0;
+}
+
+/* Selected cell highlight */
+.tiptap-editor .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* Column resize handle */
+.tiptap-editor .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  opacity: 0;
+  cursor: col-resize;
+  z-index: 10;
+  transition: opacity 0.15s;
+}
+
+.tiptap-editor th:hover .column-resize-handle,
+.tiptap-editor td:hover .column-resize-handle {
+  opacity: 0.4;
+}
+
+.tiptap-editor .resize-cursor,
+.tiptap-editor .resize-cursor * {
+  cursor: col-resize !important;
+}
+
+/* ── Table Toolbar ──────────────────────────────────────────────── */
+
+.table-toolbar {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+.table-toolbar-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+
+.table-toolbar-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.table-toolbar-btn.danger {
+  color: var(--error, #e05252);
+}
+
+.table-toolbar-btn.danger:hover {
+  background: rgba(224, 82, 82, 0.1);
+  color: var(--error, #e05252);
+}

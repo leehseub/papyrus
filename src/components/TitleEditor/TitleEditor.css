@@ -1,0 +1,28 @@
+.title-editor {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+  font-family: inherit;
+  caret-color: var(--accent);
+}
+
+.title-editor::placeholder {
+  color: var(--text-dim);
+}
+
+.title-editor-readonly {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}

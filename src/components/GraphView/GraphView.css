@@ -1,0 +1,397 @@
+.graph-panel {
+  position: relative;
+  width: 280px;
+  min-width: 280px;
+  background: var(--bg-sidebar);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.graph-resizer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  z-index: 10;
+}
+
+.graph-resizer:hover,
+.graph-resizer:active {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+/* 팝아웃 버튼 */
+/* 선택 모드 커서 */
+.graph-svg.selection-mode {
+  cursor: crosshair;
+}
+
+/* 고무밴드 선택 사각형 (div overlay) */
+.sel-rect-overlay {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1.5px dashed var(--accent, #6366f1);
+  border-radius: 2px;
+  z-index: 5;
+}
+
+/* 활성화된 버튼 (선택 모드 on) */
+.graph-float-btn.active {
+  color: var(--accent, #6366f1);
+  background: var(--bg-input);
+}
+
+
+.graph-float-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+.graph-float-btn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-input);
+}
+
+
+.graph-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.graph-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.graph-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.graph-build-btn {
+  font-size: 11px;
+  padding: 3px 10px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.graph-build-btn:hover:not(:disabled) { background: var(--bg-input-hover); }
+.graph-build-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.graph-canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.graph-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  pointer-events: none;
+  text-align: center;
+  padding: 16px;
+}
+
+.graph-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 엣지 */
+.graph-edge {
+  stroke: var(--border);
+  stroke-width: 1.5;
+  stroke-opacity: 0.6;
+}
+
+/* 노드 */
+.graph-node circle {
+  fill: var(--bg-input);
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  transition: fill 0.15s, stroke 0.15s;
+}
+
+.graph-node:hover circle {
+  fill: var(--link-color);
+  stroke: var(--link-color);
+}
+
+.graph-node.current circle {
+  fill: var(--accent);
+  stroke: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
+/* 레이블 */
+.graph-label {
+  font-size: 10px;
+  fill: var(--text-muted);
+  pointer-events: none;
+  user-select: none;
+}
+
+.graph-node:hover .graph-label,
+.graph-node.current .graph-label {
+  fill: var(--text-secondary);
+}
+
+/* 범례 */
+.graph-legend {
+  display: flex;
+  gap: 12px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-current::before  { background: var(--accent); }
+.legend-normal::before   { background: var(--bg-input); border: 1.5px solid var(--text-muted); }
+.legend-edge::before     { border-radius: 0; width: 12px; height: 2px; background: var(--border); }
+.legend-selected::before { background: transparent; border: 2px dashed var(--text-secondary); }
+
+/* 다중 선택 노드 */
+.graph-node.multi-selected circle {
+  stroke: var(--text-secondary);
+  stroke-width: 2;
+  stroke-dasharray: 3 2;
+  fill: var(--bg-input-hover);
+}
+
+/* 그룹 하이라이트 노드 */
+.graph-node.group-highlighted circle {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* 그룹 라벨 */
+.group-label {
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 선택 바 */
+.graph-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.selection-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.group-name-input {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-input);
+  border-radius: 4px;
+  color: var(--text-primary);
+  width: 100px;
+  outline: none;
+}
+.group-name-input:focus {
+  border-color: var(--accent);
+}
+
+/* 그룹 목록 */
+.graph-groups {
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.graph-groups-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 6px 14px 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.group-list {
+  list-style: none;
+  padding: 0 8px 4px;
+  margin: 0;
+}
+
+.group-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: default;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.group-item:hover,
+.group-item.active {
+  background: var(--bg-hover);
+}
+
+.group-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.group-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-count {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.group-delete-btn {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0;
+  border-radius: 3px;
+}
+
+.group-item:hover .group-delete-btn {
+  opacity: 1;
+}
+
+.group-delete-btn:hover {
+  color: var(--color-danger, #e05555);
+  background: var(--bg-danger, rgba(220, 60, 60, 0.12));
+}
+
+/* 그룹 링크 버튼 */
+.group-link-btn {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 3px;
+  opacity: 0;
+  border-radius: 3px;
+}
+.group-item:hover .group-link-btn {
+  opacity: 1;
+}
+.group-link-btn:hover {
+  color: var(--accent, #6366f1);
+  background: var(--bg-input);
+}
+
+/* 링크 모드 */
+.link-mode-label b { font-weight: 700; }
+.group-link-cancel-btn {
+  float: right;
+  font-size: 10px;
+  padding: 1px 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.group-link-cancel-btn:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+.link-mode-hint {
+  font-size: 10px;
+  color: var(--accent, #6366f1);
+  padding: 2px 14px 4px;
+  margin: 0;
+}
+.group-item.link-target {
+  cursor: pointer;
+}
+.group-connect-hint {
+  font-size: 10px;
+  color: var(--accent, #6366f1);
+  flex-shrink: 0;
+}
+
+/* 연결 목록 레이블 */
+.group-link-label {
+  flex: 1;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}

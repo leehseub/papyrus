@@ -1,0 +1,118 @@
+.collapsible-block {
+  margin: 2px 0;
+  border-radius: 4px;
+}
+
+/* ── Summary row ── */
+
+.collapsible-summary-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: text;
+  min-height: 1.6em;
+}
+
+.collapsible-summary-row:hover {
+  background: var(--bg-input);
+}
+
+.collapsible-toggle {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  border-radius: 3px;
+  padding: 0;
+  transition: color 0.15s, background 0.15s, transform 0.15s;
+  transform: rotate(-90deg);
+}
+
+.collapsible-toggle:hover {
+  color: var(--text-secondary);
+  background: var(--bg-input-hover);
+}
+
+/* Rotate arrow when open */
+.collapsible-block[data-open="true"] > .collapsible-inner > .collapsible-summary-row .collapsible-toggle {
+  transform: rotate(0deg);
+}
+
+.collapsible-summary-text {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+  outline: none;
+  word-break: break-word;
+}
+
+.collapsible-delete {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  border-radius: 3px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  transition: color 0.1s, background 0.1s;
+}
+
+.collapsible-summary-row:hover .collapsible-delete {
+  display: flex;
+}
+
+.collapsible-delete:hover {
+  color: var(--error, #e05252);
+  background: rgba(224, 82, 82, 0.1);
+}
+
+.collapsible-summary-text p {
+  margin: 0;
+}
+
+/* ── Content area ── */
+
+.collapsible-content-wrap {
+  /* Applied to the collapsibleContent node's rendered div */
+}
+
+.collapsible-block[data-open="false"] > .collapsible-inner > [data-collapsible-content],
+.collapsible-block[data-open="false"] > .collapsible-inner .collapsible-content-node {
+  display: none;
+}
+
+/* Direct child selector via the inner wrapper */
+.collapsible-block > .collapsible-inner > div[data-collapsible-content] {
+  padding-left: 24px;
+  padding-bottom: 2px;
+  border-left: 2px solid var(--border);
+  margin-left: 6px;
+}
+
+.collapsible-block[data-open="false"] > .collapsible-inner > div[data-collapsible-content] {
+  display: none;
+}
+
+/* Placeholder when summary is empty */
+.collapsible-summary-text:empty::before,
+.collapsible-summary-text p:only-child:empty::before {
+  content: '토글';
+  color: var(--text-dim);
+  pointer-events: none;
+}
