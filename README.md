@@ -2,6 +2,8 @@
 
 > Obsidian에서 영감을 받은 로컬 마크다운 메모장
 
+![Papyrus Screenshot](docs/screenshot.png)
+
 로컬 파일을 직접 읽고 쓰는 WYSIWYG 마크다운 에디터입니다.
 Obsidian의 Vault 개념과 Notion의 편집 경험을 결합해, 설치만 하면 바로 쓸 수 있는 가벼운 노트 앱을 목표로 만들었습니다.
 
