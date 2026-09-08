@@ -395,3 +395,9 @@
   white-space: nowrap;
   color: var(--text-secondary);
 }
+
+.graph-panel-left { border-left: none; border-right: 1px solid var(--border); }
+.graph-panel-left .graph-resizer { left: auto; right: 0; }
+.graph-drag-handle { cursor: grab; flex: 1; min-width: 0; user-select: none; -webkit-app-region: no-drag; }
+.graph-drag-handle:active { cursor: grabbing; }
+.graph-header-actions { flex-shrink: 0; }

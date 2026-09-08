@@ -1,4 +1,5 @@
 interface ElectronAPI {
+  getDragPosition: () => Promise<{ point: { x: number; y: number }; bounds: { x: number; y: number; width: number; height: number } }>
   minimize: () => void
   maximize: () => void
   close: () => void

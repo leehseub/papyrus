@@ -1,3 +1,4 @@
+import { useGraphDocking } from './hooks/useGraphDocking'
 import { flattenFiles } from './lib/fileTree'
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
 import { TitleBar } from './components/TitleBar/TitleBar'
@@ -70,11 +71,17 @@ function App() {
   const { graphData, building: buildingGraph, buildGraph } = useGraphData(vault?.children ?? [])
   const { groups, createGroup, deleteGroup } = useGroups()
   const { groupLinks, createGroupLink, deleteGroupLink } = useGroupLinks()
-  const [showGraph, setShowGraph] = useState(false)
+  const graphPositionsRef = useRef<NodePositions>(new Map())
+  const graphViewRef = useRef<GraphViewHandle>(null)
+  const receiveDockPositions = useCallback((positions: Record<string, { x: number; y: number }>) => {
+    graphPositionsRef.current = new Map(Object.entries(positions))
+    graphViewRef.current?.applyPositions(graphPositionsRef.current)
+  }, [])
+  const docking = useGraphDocking(receiveDockPositions)
+  const { showGraph, graphWindowOpen, graphWidth, setGraphWidth, openGraphWindow } = docking
   const showGraphRef = useRef(showGraph)
   showGraphRef.current = showGraph
 
-  const [graphWindowOpen, setGraphWindowOpen] = useState(false)
   const graphWindowOpenRef = useRef(graphWindowOpen)
   graphWindowOpenRef.current = graphWindowOpen
 
@@ -82,7 +89,6 @@ function App() {
   themeRef.current = theme
 
   // Graph panel resize
-  const [graphWidth, setGraphWidth] = useState(280)
   const isResizingGraph = useRef(false)
   const graphResizeStart = useRef({ x: 0, width: 0 })
 
@@ -95,7 +101,7 @@ function App() {
   useEffect(() => {
     function onMouseMove(e: MouseEvent) {
       if (!isResizingGraph.current) return
-      const delta = graphResizeStart.current.x - e.clientX
+      const delta = (graphResizeStart.current.x - e.clientX) * (docking.side === 'left' ? -1 : 1)
       const newWidth = Math.min(window.innerWidth - 300, Math.max(180, graphResizeStart.current.width + delta))
       setGraphWidth(newWidth)
     }
@@ -106,7 +112,7 @@ function App() {
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
     }
-  }, [])
+  }, [docking.side, setGraphWidth])
 
   // Always-fresh refs for use inside callbacks/effects
   const vaultRef = useRef(vault)
@@ -126,8 +132,6 @@ function App() {
 
   // BroadcastChannel for graph window
   const graphChannelRef = useRef<BroadcastChannel | null>(null)
-  const graphWindowRef = useRef<Window | null>(null)
-  const graphViewRef = useRef<GraphViewHandle>(null)
 
   useEffect(() => {
     const channel = new BroadcastChannel('papyrus-graph')
@@ -137,6 +141,7 @@ function App() {
       const { type, data } = e.data
       if (type === 'ready') {
         if (graphDataRef.current) channel.postMessage({ type: 'graphData', data: serializeGraphData(graphDataRef.current) })
+        channel.postMessage({ type: 'nodePositions', data: Object.fromEntries(graphPositionsRef.current) })
         channel.postMessage({ type: 'selectedPath', data: selectedFileRef.current?.path ?? null })
         channel.postMessage({ type: 'theme', data: themeRef.current })
       } else if (type === 'selectFile') {
@@ -150,11 +155,12 @@ function App() {
         }
       } else if (type === 'nodePositions') {
         const positions: NodePositions = new Map(Object.entries(data as Record<string, { x: number; y: number }>))
+        graphPositionsRef.current = positions
         graphViewRef.current?.applyPositions(positions)
       } else if (type === 'requestBuild') {
         buildGraphRef.current()
       } else if (type === 'closed') {
-        setGraphWindowOpen(false)
+        docking.onWindowClosed()
       }
     }
 
@@ -178,21 +184,6 @@ function App() {
   useEffect(() => {
     graphChannelRef.current?.postMessage({ type: 'theme', data: theme })
   }, [theme])
-
-  function openGraphWindow() {
-    if (graphWindowRef.current && !graphWindowRef.current.closed) {
-      graphWindowRef.current.focus()
-      return
-    }
-    const win = window.open(
-      '/?graphview=1',
-      'papyrus-graph',
-      'width=800,height=600,menubar=no,toolbar=no'
-    )
-    graphWindowRef.current = win
-    setGraphWindowOpen(true)
-    buildGraph()
-  }
 
   useEffect(() => {
     if ((showGraph || graphWindowOpen) && vault) buildGraph()
@@ -467,7 +458,22 @@ function App() {
   return (
     <LocaleContext.Provider value={t}>
     <div className="app">
-      {isElectron && <TitleBar />}
+      {isElectron && (
+        <TitleBar
+          trailing={appVersion || (isElectron && (updateVersion ?? availableVersion) && bannerDismissed) ? (
+                <>
+                  {appVersion && (
+                    <span className={`version-badge${isLatest ? ' version-latest' : ''}`}>v{appVersion}</span>
+                  )}
+                  {isElectron && (updateVersion ?? availableVersion) && bannerDismissed ? (
+                    <button className="version-badge version-update" onClick={handleShowBanner} title={t.updateReady(updateVersion ?? availableVersion ?? '')}>
+                      ↑ v{updateVersion ?? availableVersion}
+                    </button>
+                  ) : null}
+                </>
+              ) : null}
+        />
+      )}
       {!bannerDismissed && (
         updateVersion ? (
           <div className="update-banner">
@@ -526,7 +532,7 @@ function App() {
                   </button>
                   <button
                     className={`search-toggle-btn${showGraph ? ' active' : ''}`}
-                    onClick={() => setShowGraph(v => !v)}
+                    onClick={() => { graphPositionsRef.current = graphViewRef.current?.getPositions() ?? graphPositionsRef.current; docking.toggleGraph() }}
                     title={t.graphViewNav}
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
@@ -636,13 +642,6 @@ function App() {
             )}
 
             <div className="sidebar-footer">
-              {isElectron && (updateVersion ?? availableVersion) && bannerDismissed ? (
-                <button className="version-badge version-update" onClick={handleShowBanner} title={t.updateReady(updateVersion ?? availableVersion ?? '')}>
-                  ↑ v{updateVersion ?? availableVersion}
-                </button>
-              ) : isElectron && isLatest && appVersion ? (
-                <span className="version-badge version-latest">● v{appVersion}</span>
-              ) : null}
               <button
                 className="theme-icon-btn"
                 onClick={toggleTheme}
@@ -713,7 +712,13 @@ function App() {
           </svg>
         </button>
 
-        <div className="main-area">
+        <div className={`main-area graph-dock-${docking.side}`} ref={docking.areaRef}
+          onDragOver={docking.onDragOver} onDrop={docking.onDrop}
+          onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) docking.clearDrag() }}>
+          {docking.dragging && <div className="graph-dock-targets" aria-hidden="true">
+            <div className={`graph-dock-target left${docking.preview === 'left' ? ' active' : ''}`}>{t.dockLeft}</div>
+            <div className={`graph-dock-target right${docking.preview === 'right' ? ' active' : ''}`}>{t.dockRight}</div>
+          </div>}
           <main className="editor-area">
             <TabBar
               tabs={tabs}
@@ -742,6 +747,11 @@ function App() {
             <Suspense fallback={<div style={{ width: graphWidth, flexShrink: 0 }} role="status">{t.loading}</div>}>
               <GraphView
                 ref={graphViewRef}
+                side={docking.side}
+                initialPositions={graphPositionsRef.current}
+                onHeaderDragStart={() => { graphPositionsRef.current = graphViewRef.current?.getPositions() ?? graphPositionsRef.current; docking.startDrag() }}
+                onHeaderDragEnd={docking.clearDrag}
+                onDetach={point => { graphPositionsRef.current = graphViewRef.current?.getPositions() ?? graphPositionsRef.current; openGraphWindow(point) }}
                 graphData={graphData}
                 building={buildingGraph}
                 selectedPath={selectedFile?.path ?? null}
@@ -749,8 +759,9 @@ function App() {
                 onBuild={buildGraph}
                 width={graphWidth}
                 onResizerMouseDown={onGraphResizerMouseDown}
-                onOpenInWindow={openGraphWindow}
+                onOpenInWindow={() => { graphPositionsRef.current = graphViewRef.current?.getPositions() ?? graphPositionsRef.current; openGraphWindow() }}
                 onPositionsChange={positions => {
+                  graphPositionsRef.current = positions
                   const posObj: Record<string, { x: number; y: number }> = {}
                   positions.forEach((pos, id) => { posObj[id] = pos })
                   graphChannelRef.current?.postMessage({ type: 'nodePositions', data: posObj })

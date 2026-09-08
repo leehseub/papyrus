@@ -342,6 +342,7 @@
 
 /* Version badge */
 .version-badge {
+  color: var(--text-muted);
   font-size: 10px;
   font-weight: 500;
   padding: 2px 7px;
@@ -544,3 +545,14 @@
   color: var(--text-secondary);
 }
 
+.graph-dock-left > .graph-panel { order: -1; }
+.graph-dock-targets { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+.graph-dock-target {
+  position: absolute; top: 0; bottom: 0; width: min(220px, 33.333%);
+  display: flex; align-items: center; justify-content: center;
+  border: 2px dashed var(--accent); background: var(--bg-sidebar);
+  opacity: 0.65; color: var(--text-primary); font-size: 12px;
+}
+.graph-dock-target.left { left: 0; }
+.graph-dock-target.right { right: 0; }
+.graph-dock-target.active { opacity: 0.95; border-style: solid; background: var(--bg-input-hover); }

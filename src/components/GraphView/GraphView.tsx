@@ -1,3 +1,5 @@
+import { GraphDragHandle } from './GraphDragHandle'
+import type { DockSide } from '../../lib/graphLayout'
 import { useEffect, useRef, useCallback, useState, forwardRef, useImperativeHandle } from 'react'
 import { useT } from '../../contexts/LocaleContext'
 import * as d3 from 'd3'
@@ -12,10 +14,16 @@ import './GraphView.css'
 export type NodePositions = Map<string, { x: number; y: number }>
 
 export interface GraphViewHandle {
+  getPositions: () => NodePositions
   applyPositions: (positions: NodePositions) => void
 }
 
 interface GraphViewProps {
+  side: DockSide
+  initialPositions: NodePositions
+  onHeaderDragStart: () => void
+  onHeaderDragEnd: () => void
+  onDetach: (point: { x: number; y: number }) => void
   graphData: GraphData | null
   building: boolean
   selectedPath: string | null
@@ -34,6 +42,7 @@ interface GraphViewProps {
 }
 
 export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function GraphView({
+  side, initialPositions, onHeaderDragStart, onHeaderDragEnd, onDetach,
   graphData, building, selectedPath, onFileSelect, onBuild,
   width, onResizerMouseDown, onOpenInWindow,
   groups, onCreateGroup, onDeleteGroup,
@@ -47,7 +56,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
   const didDragRef = useRef(false)
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const savedTransformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity)
-  const savedPositionsRef = useRef<NodePositions>(new Map())
+  const savedPositionsRef = useRef<NodePositions>(new Map(initialPositions))
   const nodeGroupRef = useRef<d3.Selection<SVGGElement, GraphNode, SVGGElement, unknown> | null>(null)
   const linkSelRef = useRef<d3.Selection<SVGLineElement, GraphEdge, SVGGElement, unknown> | null>(null)
   const hullGroupRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null)
@@ -63,6 +72,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
   onPositionsChangeRef.current = onPositionsChange
 
   useImperativeHandle(ref, () => ({
+    getPositions: () => new Map(savedPositionsRef.current),
     applyPositions(positions: NodePositions) {
       positions.forEach((pos, id) => {
         savedPositionsRef.current.set(id, pos)
@@ -424,9 +434,10 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
       if (selectedNodesRef.current.has(id)) cls.push('multi-selected')
       return cls.join(' ')
     }
+    return () => { simulation.stop(); updateHullsRef.current = null }
   }, [graphData, onFileSelect])
 
-  useEffect(() => { if (graphData) draw() }, [draw, graphData])
+  useEffect(() => { if (graphData) return draw() }, [draw, graphData])
 
 
   useEffect(() => {
@@ -535,11 +546,11 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
   }
 
   return (
-    <aside className="graph-panel" style={{ width, minWidth: width }}>
+    <aside className={`graph-panel graph-panel-${side}`} style={{ width, minWidth: width }}>
       <div className="graph-resizer" onMouseDown={onResizerMouseDown} />
 
       <div className="graph-header">
-        <span className="graph-title">{t.graphView}</span>
+        <GraphDragHandle label={t.graphView} hint={t.dragGraph} onStart={onHeaderDragStart} onEnd={onHeaderDragEnd} onDetach={onDetach} />
         <div className="graph-header-actions">
           <button className="graph-build-btn" onClick={onBuild} disabled={building}>
             {building ? t.analyzing : t.analyze}

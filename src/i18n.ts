@@ -55,6 +55,9 @@ export const translations = {
 
     // GraphView
     graphView: '그래프 뷰',
+    dragGraph: '드래그하여 좌우에 배치하거나 창 밖으로 분리',
+    dockLeft: '왼쪽에 배치',
+    dockRight: '오른쪽에 배치',
     analyze: '분석',
     analyzing: '분석 중...',
     selectionModeOn: '선택 모드 끄기 (Esc)',
@@ -152,6 +155,9 @@ export const translations = {
 
     // GraphView
     graphView: 'Graph View',
+    dragGraph: 'Drag to dock on either side or detach outside the window',
+    dockLeft: 'Dock left',
+    dockRight: 'Dock right',
     analyze: 'Build',
     analyzing: 'Building...',
     selectionModeOn: 'Exit selection mode (Esc)',

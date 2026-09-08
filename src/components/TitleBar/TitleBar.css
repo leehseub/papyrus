@@ -57,3 +57,12 @@
   background: #c42b1c;
   color: #fff;
 }
+
+.title-bar-info {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 0 10px;
+  -webkit-app-region: no-drag;
+}

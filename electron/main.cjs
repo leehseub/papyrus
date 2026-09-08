@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain, Menu, dialog } = require('electron')
+const { app, BrowserWindow, shell, ipcMain, Menu, dialog, screen } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { autoUpdater } = require('electron-updater')
@@ -122,6 +122,11 @@ app.whenReady().then(() => {
 
     autoUpdater.checkForUpdates()
   }
+})
+
+ipcMain.handle('graph-drag-position', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  return { point: screen.getCursorScreenPoint(), bounds: win.getBounds() }
 })
 
 ipcMain.handle('get-app-version', () => app.getVersion())

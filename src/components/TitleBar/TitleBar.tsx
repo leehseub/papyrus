@@ -1,8 +1,9 @@
 import { useT } from '../../contexts/LocaleContext'
 import { useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import './TitleBar.css'
 
-export function TitleBar({ title = "Papyrus" }: { title?: string }) {
+export function TitleBar({ title = "Papyrus", trailing }: { title?: string; trailing?: ReactNode }) {
   const t = useT()
   const [isMaximized, setIsMaximized] = useState(false)
 
@@ -21,6 +22,7 @@ export function TitleBar({ title = "Papyrus" }: { title?: string }) {
     <div className="title-bar">
       <span className="title-bar-name">{title}</span>
       <div className="title-bar-drag" />
+      {trailing && <div className="title-bar-info">{trailing}</div>}
       <div className="title-bar-controls">
         <button className="titlebar-btn titlebar-min" onClick={handleMinimize} title={t.minimize}>
           <svg width="10" height="1" viewBox="0 0 10 1" fill="none">

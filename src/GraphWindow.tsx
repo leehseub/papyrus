@@ -1,3 +1,6 @@
+import { GraphDragHandle } from './components/GraphView/GraphDragHandle'
+import { GRAPH_LAYOUT_CHANNEL } from './lib/graphLayout'
+import type { DockSide } from './lib/graphLayout'
 import { useLocale } from './hooks/useLocale'
 import { translations } from './i18n'
 import { LocaleContext } from './contexts/LocaleContext'
@@ -38,6 +41,21 @@ export function GraphWindow() {
   const { groupLinks, createGroupLink, deleteGroupLink } = useGroupLinks()
 
   const channelRef = useRef<BroadcastChannel | null>(null)
+  const layoutChannelRef = useRef<BroadcastChannel | null>(null)
+  useEffect(() => {
+    const channel = new BroadcastChannel(GRAPH_LAYOUT_CHANNEL)
+    layoutChannelRef.current = channel
+    channel.onmessage = ({ data }) => { if (data.type === 'docked') window.close() }
+    return () => { channel.close(); layoutChannelRef.current = null }
+  }, [])
+
+  function sharePositions() {
+    channelRef.current?.postMessage({ type: 'nodePositions', data: Object.fromEntries(savedPositionsRef.current) })
+  }
+  function dock(side: DockSide) {
+    sharePositions()
+    layoutChannelRef.current?.postMessage({ type: 'dock', side, positions: Object.fromEntries(savedPositionsRef.current) })
+  }
   const canvasWrapRef = useRef<HTMLDivElement>(null)
   const selRectDivRef = useRef<HTMLDivElement>(null)
   const dragStartRef = useRef<{ x: number; y: number } | null>(null)
@@ -426,9 +444,10 @@ export function GraphWindow() {
       if (selectedNodesRef.current.has(id)) cls.push('multi-selected')
       return cls.join(' ')
     }
+    return () => { simulation.stop(); updateHullsRef.current = null }
   }, [nodes, edges])
 
-  useEffect(() => { if (nodes.length > 0) draw() }, [draw])
+  useEffect(() => { if (nodes.length > 0) return draw() }, [draw])
 
 
   useEffect(() => {
@@ -549,8 +568,10 @@ export function GraphWindow() {
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-sidebar)' }}>
       {!!window.electronAPI && <TitleBar title={`Papyrus — ${t.graphView}`} />}
       <div className="graph-header">
-        <span className="graph-title">Papyrus {t.graphView}</span>
+        <GraphDragHandle label={`Papyrus ${t.graphView}`} hint={t.dragGraph} floating onStart={sharePositions} />
         <div className="graph-header-actions">
+          <button className="graph-float-btn" title={t.dockLeft} onClick={() => dock('left')}>⇤</button>
+          <button className="graph-float-btn" title={t.dockRight} onClick={() => dock('right')}>⇥</button>
           <button
             className="graph-build-btn"
             disabled={building}
