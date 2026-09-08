@@ -1,8 +1,11 @@
+import type { NoteLabel } from '../../lib/wikilinks'
+import { vaultRelativePath } from '../../lib/wikilinks'
 import type { SearchResult, FileNode } from '../../types'
 import { useT } from '../../contexts/LocaleContext'
 import './Search.css'
 
 interface SearchProps {
+  noteLabels: Map<string, NoteLabel>
   query: string
   results: SearchResult[]
   searching: boolean
@@ -25,7 +28,7 @@ function HighlightedExcerpt({ text, query }: { text: string; query: string }) {
   )
 }
 
-export function Search({ query, results, searching, selectedPath, onQueryChange, onFileSelect }: SearchProps) {
+export function Search({ noteLabels, query, results, searching, selectedPath, onQueryChange, onFileSelect }: SearchProps) {
   const t = useT()
   return (
     <div className="search-panel">
@@ -54,10 +57,12 @@ export function Search({ query, results, searching, selectedPath, onQueryChange,
         {results.map(result => (
           <div
             key={result.file.path}
+            data-tooltip={noteLabels.get(result.file.path)?.relativePath ?? vaultRelativePath(result.file.path)}
             className={`search-result-item${selectedPath === result.file.path ? ' selected' : ''}`}
             onClick={() => onFileSelect(result.file)}
           >
             <p className="search-result-name">{result.file.name.replace(/\.md$/, '')}</p>
+            {noteLabels.get(result.file.path)?.context && <p className="search-result-path">{noteLabels.get(result.file.path)!.context}</p>}
             <p className="search-result-excerpt">
               <HighlightedExcerpt text={result.excerpt} query={query} />
             </p>

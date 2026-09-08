@@ -1,3 +1,4 @@
+import { remapGraphPath, remapGraphPositions } from './lib/graphPaths'
 import { GraphDragHandle } from './components/GraphView/GraphDragHandle'
 import { GRAPH_LAYOUT_CHANNEL } from './lib/graphLayout'
 import type { DockSide } from './lib/graphLayout'
@@ -18,6 +19,8 @@ import './components/GraphView/GraphView.css'
 interface SimpleNode extends d3.SimulationNodeDatum {
   id: string
   name: string
+  context: string
+  relativePath: string
 }
 
 interface SimpleEdge {
@@ -112,7 +115,7 @@ export function GraphWindow() {
     channel.onmessage = (e) => {
       const { type, data } = e.data
       if (type === 'graphData') {
-        setNodes(data.nodes.map((n: { id: string; name: string }) => ({ id: n.id, name: n.name })))
+        setNodes(data.nodes.map((n: SimpleNode) => ({ id: n.id, name: n.name, context: n.context ?? '', relativePath: n.relativePath ?? n.id })))
         setEdges(data.edges.map((ed: { source: string; target: string }) => ({ source: ed.source, target: ed.target })))
         setHasData(true)
         setBuilding(false)
@@ -129,6 +132,10 @@ export function GraphWindow() {
           .attr('y1', d => (d.source as SimpleNode).y ?? 0)
           .attr('x2', d => (d.target as SimpleNode).x ?? 0)
           .attr('y2', d => (d.target as SimpleNode).y ?? 0)
+      } else if (type === 'nodePathChanged') {
+        savedPositionsRef.current = remapGraphPositions(savedPositionsRef.current, data.oldPath, data.newPath)
+        setSelectedNodes(previous => new Set([...previous].map(path => remapGraphPath(path, data.oldPath, data.newPath))))
+        setSelectedPath(previous => previous ? remapGraphPath(previous, data.oldPath, data.newPath) : null)
       } else if (type === 'selectedPath') {
         setSelectedPath(data)
       } else if (type === 'theme') {
@@ -234,6 +241,9 @@ export function GraphWindow() {
     nodeGroup.append('circle').attr('r', d => d.id === selectedPathRef.current ? 8 : 5)
     nodeGroup.append('text').attr('dy', -10).attr('text-anchor', 'middle')
       .attr('class', 'graph-label').text(d => d.name)
+    nodeGroup.filter(d => !!d.context).append('text').attr('dy', 18).attr('text-anchor', 'middle')
+      .attr('class', 'graph-label-context').text(d => d.context)
+    nodeGroup.attr('data-tooltip', d => d.relativePath)
 
     const nodeMap = new Map(nodesCopy.map(n => [n.id, n]))
     let coNodes: { node: SimpleNode; dx: number; dy: number }[] = []
@@ -570,8 +580,8 @@ export function GraphWindow() {
       <div className="graph-header">
         <GraphDragHandle label={`Papyrus ${t.graphView}`} hint={t.dragGraph} floating onStart={sharePositions} />
         <div className="graph-header-actions">
-          <button className="graph-float-btn" title={t.dockLeft} onClick={() => dock('left')}>⇤</button>
-          <button className="graph-float-btn" title={t.dockRight} onClick={() => dock('right')}>⇥</button>
+          <button className="graph-float-btn" aria-label={t.dockLeft} data-tooltip={t.dockLeft} onClick={() => dock('left')}>⇤</button>
+          <button className="graph-float-btn" aria-label={t.dockRight} data-tooltip={t.dockRight} onClick={() => dock('right')}>⇥</button>
           <button
             className="graph-build-btn"
             disabled={building}

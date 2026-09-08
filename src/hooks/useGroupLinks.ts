@@ -1,3 +1,4 @@
+import { remapGraphPath } from '../lib/graphPaths'
 import { useState, useCallback, useEffect } from 'react'
 
 export interface GroupLink {
@@ -41,5 +42,18 @@ export function useGroupLinks() {
     setGroupLinks(updated)
   }, [])
 
-  return { groupLinks, createGroupLink, deleteGroupLink }
+  const remapPaths = useCallback((oldPath: string, newPath: string) => {
+    const current = load()
+    let changed = false
+    const updated = current.map(link => {
+      if (link.toType !== 'node') return link
+      const toId = remapGraphPath(link.toId, oldPath, newPath)
+      if (toId === link.toId) return link
+      changed = true
+      return { ...link, toId }
+    })
+    if (changed) { persist(updated); setGroupLinks(updated) }
+  }, [])
+
+  return { groupLinks, createGroupLink, deleteGroupLink, remapPaths }
 }

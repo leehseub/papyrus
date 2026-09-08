@@ -1,3 +1,4 @@
+import { remapGraphPath, remapGraphPositions } from '../../lib/graphPaths'
 import { GraphDragHandle } from './GraphDragHandle'
 import type { DockSide } from '../../lib/graphLayout'
 import { useEffect, useRef, useCallback, useState, forwardRef, useImperativeHandle } from 'react'
@@ -14,6 +15,7 @@ import './GraphView.css'
 export type NodePositions = Map<string, { x: number; y: number }>
 
 export interface GraphViewHandle {
+  remapPaths: (oldPath: string, newPath: string) => void
   getPositions: () => NodePositions
   applyPositions: (positions: NodePositions) => void
 }
@@ -73,6 +75,10 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
 
   useImperativeHandle(ref, () => ({
     getPositions: () => new Map(savedPositionsRef.current),
+    remapPaths(oldPath: string, newPath: string) {
+      savedPositionsRef.current = remapGraphPositions(savedPositionsRef.current, oldPath, newPath)
+      setSelectedNodes(previous => new Set([...previous].map(path => remapGraphPath(path, oldPath, newPath))))
+    },
     applyPositions(positions: NodePositions) {
       positions.forEach((pos, id) => {
         savedPositionsRef.current.set(id, pos)
@@ -215,6 +221,9 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
     nodeGroup.append('circle').attr('r', d => d.id === selectedPathRef.current ? 8 : 5)
     nodeGroup.append('text').attr('dy', -10).attr('text-anchor', 'middle')
       .attr('class', 'graph-label').text(d => d.name)
+    nodeGroup.filter(d => !!d.context).append('text').attr('dy', 18).attr('text-anchor', 'middle')
+      .attr('class', 'graph-label-context').text(d => d.context)
+    nodeGroup.attr('data-tooltip', d => d.relativePath)
 
     const nodeMap = new Map(nodes.map(n => [n.id, n]))
     let coNodes: { node: GraphNode; dx: number; dy: number }[] = []

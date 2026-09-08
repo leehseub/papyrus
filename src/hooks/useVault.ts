@@ -1,3 +1,4 @@
+import { vaultRelativePath } from '../lib/wikilinks'
 import { flattenFiles } from '../lib/fileTree'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { FolderNode, FileNode } from '../types'
@@ -307,8 +308,8 @@ export function useVault() {
    * 파일 rename 후 vault 전체에서 해당 파일을 가리키는 wikilink를 새 이름으로 업데이트
    * oldBaseName / newBaseName: .md 확장자 없는 파일 기본 이름
    */
-  const updateLinksForRename = useCallback(async (oldBaseName: string, newBaseName: string) => {
-    const files = flattenFiles(vault?.children ?? [])
+  const updateLinksForRename = useCallback(async (oldBaseName: string, newBaseName: string, oldPath?: string) => {
+    const files = flattenFiles(vault?.children ?? []).filter(file => file.path !== oldPath)
     await Promise.all(files.map(async (file) => {
       try {
         const f = await file.handle.getFile()
@@ -316,6 +317,13 @@ export function useVault() {
         // .md 포함/미포함 두 형태 모두 교체
         let updated = replaceWikilinks(content, oldBaseName, newBaseName)
         updated = replaceWikilinks(updated, `${oldBaseName}.md`, `${newBaseName}.md`)
+        if (oldPath) {
+          const relative = vaultRelativePath(oldPath).replace(/\.md$/i, '')
+          const oldTarget = relative.includes('/') ? relative : `./${relative}`
+          const newTarget = oldTarget.slice(0, oldTarget.length - oldBaseName.length) + newBaseName
+          updated = replaceWikilinks(updated, oldTarget, newTarget)
+          updated = replaceWikilinks(updated, `${oldTarget}.md`, `${newTarget}.md`)
+        }
         if (updated === content) return
         const writable = await file.handle.createWritable()
         await writable.write(updated)

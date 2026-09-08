@@ -1,3 +1,4 @@
+import { remapGraphPath } from '../lib/graphPaths'
 import { useState, useCallback, useEffect } from 'react'
 
 export interface NodeGroup {
@@ -51,5 +52,17 @@ export function useGroups() {
     setGroups(updated)
   }, [])
 
-  return { groups, createGroup, deleteGroup }
+  const remapPaths = useCallback((oldPath: string, newPath: string) => {
+    const current = load()
+    let changed = false
+    const updated = current.map(group => {
+      const paths = group.paths.map(path => remapGraphPath(path, oldPath, newPath))
+      if (paths.every((path, index) => path === group.paths[index])) return group
+      changed = true
+      return { ...group, paths: [...new Set(paths)] }
+    })
+    if (changed) { persist(updated); setGroups(updated) }
+  }, [])
+
+  return { groups, createGroup, deleteGroup, remapPaths }
 }

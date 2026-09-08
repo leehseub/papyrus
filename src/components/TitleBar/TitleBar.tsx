@@ -24,12 +24,12 @@ export function TitleBar({ title = "Papyrus", trailing }: { title?: string; trai
       <div className="title-bar-drag" />
       {trailing && <div className="title-bar-info">{trailing}</div>}
       <div className="title-bar-controls">
-        <button className="titlebar-btn titlebar-min" onClick={handleMinimize} title={t.minimize}>
+        <button className="titlebar-btn titlebar-min" onClick={handleMinimize} aria-label={t.minimize} data-tooltip={t.minimize}>
           <svg width="10" height="1" viewBox="0 0 10 1" fill="none">
             <rect width="10" height="1.2" y="0" fill="currentColor" />
           </svg>
         </button>
-        <button className="titlebar-btn titlebar-max" onClick={handleMaximize} title={isMaximized ? t.restore : t.maximize}>
+        <button className="titlebar-btn titlebar-max" onClick={handleMaximize} aria-label={isMaximized ? t.restore : t.maximize} data-tooltip={isMaximized ? t.restore : t.maximize}>
           {isMaximized ? (
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
               <rect x="0" y="2" width="8" height="8" stroke="currentColor" strokeWidth="1.1" />
@@ -41,7 +41,7 @@ export function TitleBar({ title = "Papyrus", trailing }: { title?: string; trai
             </svg>
           )}
         </button>
-        <button className="titlebar-btn titlebar-close" onClick={handleClose} title={t.close}>
+        <button className="titlebar-btn titlebar-close" onClick={handleClose} aria-label={t.close} data-tooltip={t.close}>
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
           </svg>

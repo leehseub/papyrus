@@ -1,3 +1,5 @@
+import { remapGraphPositions } from './lib/graphPaths'
+import { buildNoteLabels, buildWikilinkOptions, resolveWikilink } from './lib/wikilinks'
 import { useGraphDocking } from './hooks/useGraphDocking'
 import { flattenFiles } from './lib/fileTree'
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
@@ -30,7 +32,7 @@ const GraphView = lazy(() => import('./components/GraphView/GraphView').then(mod
 
 function serializeGraphData(gd: GraphData) {
   return {
-    nodes: gd.nodes.map(n => ({ id: n.id, name: n.name })),
+    nodes: gd.nodes.map(n => ({ id: n.id, name: n.name, context: n.context, relativePath: n.relativePath })),
     edges: gd.edges.map(e => ({
       source: typeof e.source === 'string' ? e.source : (e.source as GraphNode).id,
       target: typeof e.target === 'string' ? e.target : (e.target as GraphNode).id,
@@ -59,6 +61,8 @@ function App() {
   }, [langMenuOpen])
   const { vault, loading, error, pendingHandle, reconnectVault, openVault, openFile, refreshVault, createFile, deleteFile, updateLinksForRename, moveFile, renameFolder } = useVault()
   const { width, isOpen, isResizing, toggle, onResizerMouseDown } = useSidebarResize()
+  const noteLabels = useMemo(() => buildNoteLabels(flattenFiles(vault?.children ?? [])), [vault])
+  const wikilinkOptions = useMemo(() => buildWikilinkOptions(flattenFiles(vault?.children ?? [])), [vault])
   const { saving, save, rename } = useFile()
   const { tabs, activeIdx, activeTab, openTab, switchTab, closeTab, clearTabs, closePaths, updateTabContent, markSaved, updateTabFile } = useTabs()
 
@@ -69,8 +73,8 @@ function App() {
   const { query, setQuery, results, searching, clear } = useSearch(vault?.children ?? [])
   const { tagMap, indexing, buildIndex } = useTagIndex(vault?.children ?? [])
   const { graphData, building: buildingGraph, buildGraph } = useGraphData(vault?.children ?? [])
-  const { groups, createGroup, deleteGroup } = useGroups()
-  const { groupLinks, createGroupLink, deleteGroupLink } = useGroupLinks()
+  const { groups, createGroup, deleteGroup, remapPaths: remapGroupPaths } = useGroups()
+  const { groupLinks, createGroupLink, deleteGroupLink, remapPaths: remapGroupLinkPaths } = useGroupLinks()
   const graphPositionsRef = useRef<NodePositions>(new Map())
   const graphViewRef = useRef<GraphViewHandle>(null)
   const receiveDockPositions = useCallback((positions: Record<string, { x: number; y: number }>) => {
@@ -193,11 +197,7 @@ function App() {
   const handleWikilinkClick = useCallback((title: string) => {
     if (!vault) return
     const files = flattenFiles(vault.children)
-    const matchName = title.endsWith('.md') ? title : `${title}.md`
-    const currentDir = selectedFile?.path.split('/').slice(0, -1).join('/') ?? ''
-    const preferred = files.find(f => f.path === `${currentDir}/${matchName}`)
-    const fallback = files.find(f => f.name === matchName)
-    const found = preferred ?? fallback
+    const found = resolveWikilink(files, title, selectedFile?.path)
     if (found) {
       found.handle.getFile()
         .then(f => f.text())
@@ -211,6 +211,15 @@ function App() {
     updateTabContent(activeIdxRef.current, markdown)
   }, [updateTabContent])
 
+  const handleGraphPathChange = useCallback((oldPath: string, newPath: string) => {
+    if (oldPath === newPath) return
+    remapGroupPaths(oldPath, newPath)
+    remapGroupLinkPaths(oldPath, newPath)
+    graphPositionsRef.current = remapGraphPositions(graphViewRef.current?.getPositions() ?? graphPositionsRef.current, oldPath, newPath)
+    graphViewRef.current?.remapPaths(oldPath, newPath)
+    graphChannelRef.current?.postMessage({ type: 'nodePathChanged', data: { oldPath, newPath } })
+  }, [remapGroupPaths, remapGroupLinkPaths])
+
   // Ctrl+S 저장 (에디터 onSave에서 호출) — rename·그래프 리빌드도 이 시점에
   const handleSaveActive = useCallback(async (markdownFromEditor?: string) => {
     const tab = activeTabRef.current
@@ -221,11 +230,6 @@ function App() {
     if (!ok) return
     markSaved(idx, content)
 
-    // 그래프 리빌드
-    if (showGraphRef.current || graphWindowOpenRef.current) {
-      buildGraphRef.current()
-    }
-
     // H1 기반 파일명 rename (vault 모드 전용)
     if (tab.file.dirHandle) {
       const match = content.match(/^# (.+)$/m)
@@ -234,13 +238,16 @@ function App() {
       if (newTitle && newTitle !== currentName) {
         const renamed = await rename(tab.file, content, newTitle)
         if (renamed) {
-          await updateLinksForRename(currentName, newTitle)
+          handleGraphPathChange(tab.file.path, renamed.path)
+          await updateLinksForRename(currentName, newTitle, tab.file.path)
           updateTabFile(idx, renamed)
           await refreshVault()
+          return // The vault effect rebuilds the graph with the new file handles.
         }
       }
     }
-  }, [save, markSaved, rename, updateLinksForRename, updateTabFile, refreshVault])
+    if (showGraphRef.current || graphWindowOpenRef.current) buildGraphRef.current()
+  }, [save, markSaved, rename, updateLinksForRename, updateTabFile, refreshVault, handleGraphPathChange])
 
   // 파일을 읽어서 탭으로 열기
   async function loadAndOpenTab(file: FileNode) {
@@ -391,6 +398,7 @@ function App() {
     if (file.dirHandle === vault.handle) return
     const moved = await moveFile(file, vault.handle, vault.path)
     if (moved) {
+      handleGraphPathChange(file.path, moved.path)
       const tabIdx = tabs.findIndex(t => t.file.path === file.path)
       if (tabIdx >= 0) updateTabFile(tabIdx, moved)
     } else {
@@ -466,7 +474,7 @@ function App() {
                     <span className={`version-badge${isLatest ? ' version-latest' : ''}`}>v{appVersion}</span>
                   )}
                   {isElectron && (updateVersion ?? availableVersion) && bannerDismissed ? (
-                    <button className="version-badge version-update" onClick={handleShowBanner} title={t.updateReady(updateVersion ?? availableVersion ?? '')}>
+                    <button className="version-badge version-update" onClick={handleShowBanner} aria-label={t.updateReady(updateVersion ?? availableVersion ?? '')} data-tooltip={t.updateReady(updateVersion ?? availableVersion ?? '')}>
                       ↑ v{updateVersion ?? availableVersion}
                     </button>
                   ) : null}
@@ -515,7 +523,7 @@ function App() {
                   <button
                     className={`search-toggle-btn${sidebarMode === 'search' ? ' active' : ''}`}
                     onClick={handleSearchToggle}
-                    title={t.search}
+                    aria-label={t.search} data-tooltip={t.search}
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                       <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
@@ -524,7 +532,7 @@ function App() {
                   <button
                     className={`search-toggle-btn${sidebarMode === 'tags' ? ' active' : ''}`}
                     onClick={handleTagsToggle}
-                    title={t.tagsNav}
+                    aria-label={t.tagsNav} data-tooltip={t.tagsNav}
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                       <path d="M2 2a1 1 0 0 1 1-1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 2 6.586V2zm3.5 4a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
@@ -533,7 +541,7 @@ function App() {
                   <button
                     className={`search-toggle-btn${showGraph ? ' active' : ''}`}
                     onClick={() => { graphPositionsRef.current = graphViewRef.current?.getPositions() ?? graphPositionsRef.current; docking.toggleGraph() }}
-                    title={t.graphViewNav}
+                    aria-label={t.graphViewNav} data-tooltip={t.graphViewNav}
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                       <circle cx="3" cy="8" r="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
@@ -573,13 +581,13 @@ function App() {
                       <p className="vault-name">{vault.name}</p>
                       <div className="vault-actions">
                         {vault.name !== '열린 파일' && (
-                          <button className="refresh-btn" onClick={handleCreateStart} disabled={loading} title={t.newFile}>
+                          <button className="refresh-btn" onClick={handleCreateStart} disabled={loading} aria-label={t.newFile} data-tooltip={t.newFile}>
                             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                               <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
                             </svg>
                           </button>
                         )}
-                        <button className="refresh-btn" onClick={refreshVault} disabled={loading} title={t.refresh}>
+                        <button className="refresh-btn" onClick={refreshVault} disabled={loading} aria-label={t.refresh} data-tooltip={t.refresh}>
                           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                             <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.418A6 6 0 1 1 8 2v1z"/>
                             <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
@@ -595,6 +603,7 @@ function App() {
                         const oldPath = folder.path
                         const ok = await renameFolder(folder, newName)
                         if (ok) {
+                          handleGraphPathChange(oldPath, `${oldPath.slice(0, oldPath.lastIndexOf('/'))}/${newName}`)
                           closePaths(new Set(tabs.filter(t => t.file.path.startsWith(oldPath + '/')).map(t => t.file.path)))
                         } else {
                           setMoveErrorMsg(tRef.current.renameFolderFail)
@@ -605,6 +614,7 @@ function App() {
                       onMoveFile={async (file, targetDirHandle, targetPath) => {
                         const moved = await moveFile(file, targetDirHandle, targetPath)
                         if (moved) {
+                          handleGraphPathChange(file.path, moved.path)
                           const tabIdx = tabs.findIndex(t => t.file.path === file.path)
                           if (tabIdx >= 0) updateTabFile(tabIdx, moved)
                         }
@@ -624,6 +634,7 @@ function App() {
               </div>
             ) : sidebarMode === 'search' ? (
               <Search
+                noteLabels={noteLabels}
                 query={query}
                 results={results}
                 searching={searching}
@@ -645,7 +656,7 @@ function App() {
               <button
                 className="theme-icon-btn"
                 onClick={toggleTheme}
-                title={theme === 'dark' ? t.lightMode : t.darkMode}
+                aria-label={theme === 'dark' ? t.lightMode : t.darkMode} data-tooltip={theme === 'dark' ? t.lightMode : t.darkMode}
               >
                 {theme === 'dark' ? (
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -679,7 +690,7 @@ function App() {
                 <button
                   className="lang-btn"
                   onClick={() => setLangMenuOpen(v => !v)}
-                  title={t.language}
+                  aria-label={t.language} data-tooltip={t.language}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"/>
@@ -702,7 +713,7 @@ function App() {
           className="sidebar-toggle"
           onClick={toggle}
           style={{ left: isOpen ? width : 0 }}
-          title={isOpen ? '사이드바 닫기' : '사이드바 열기'}
+          aria-label={isOpen ? '사이드바 닫기' : '사이드바 열기'} data-tooltip={isOpen ? '사이드바 닫기' : '사이드바 열기'}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
             {isOpen
@@ -721,6 +732,7 @@ function App() {
           </div>}
           <main className="editor-area">
             <TabBar
+              noteLabels={noteLabels}
               tabs={tabs}
               activeIdx={activeIdx}
               onSwitch={switchTab}
@@ -729,6 +741,8 @@ function App() {
             {activeTab ? (
               <Suspense fallback={<p className="placeholder" role="status">{t.loading}</p>}>
                 <Editor
+                  wikilinkOptions={wikilinkOptions}
+                  currentPath={activeTab.file.path}
                   key={activeTab.file.path}
                   content={displayContent}
                   saving={saving}

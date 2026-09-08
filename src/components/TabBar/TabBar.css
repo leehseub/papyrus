@@ -78,3 +78,7 @@
   background: var(--bg-input-hover);
   color: var(--text-primary) !important;
 }
+
+.tab-with-context { max-width: 260px; }
+.tab-with-context .tab-label { min-width: 24px; }
+.tab-context { color: var(--text-muted); font-size: 11px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

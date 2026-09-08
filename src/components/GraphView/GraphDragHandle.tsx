@@ -34,5 +34,5 @@ export function GraphDragHandle({ label, hint, floating, onStart, onEnd, onDetac
     const { point, bounds } = position
     if (point.x < bounds.x || point.x >= bounds.x + bounds.width || point.y < bounds.y || point.y >= bounds.y + bounds.height) onDetach?.(point)
   }
-  return <span className="graph-title graph-drag-handle" draggable onDragStart={start} onDragEnd={end} title={hint}>{label}</span>
+  return <span className="graph-title graph-drag-handle" draggable onDragStart={start} onDragEnd={end} data-tooltip={hint} data-tooltip-anchor="pointer">{label}</span>
 }

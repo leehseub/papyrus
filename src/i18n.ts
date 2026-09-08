@@ -32,6 +32,8 @@ export const translations = {
 
     // Editor
     titlePlaceholder: '제목 없음',
+    linkSuggestions: '연결할 노트',
+    noLinkSuggestions: '일치하는 노트가 없습니다.',
     addRow: '행 추가',
     addColumn: '열 추가',
     deleteRow: '행 삭제',
@@ -132,6 +134,8 @@ export const translations = {
 
     // Editor
     titlePlaceholder: 'Untitled',
+    linkSuggestions: 'Link to a note',
+    noLinkSuggestions: 'No matching notes.',
     addRow: 'Add Row',
     addColumn: 'Add Column',
     deleteRow: 'Delete Row',

@@ -28,7 +28,7 @@ export function TagPanel({ tagMap, indexing, selectedPath, onBuildIndex, onFileS
           className="tag-refresh-btn"
           onClick={onBuildIndex}
           disabled={indexing}
-          title={t.refreshTagIndex}
+          aria-label={t.refreshTagIndex} data-tooltip={t.refreshTagIndex}
         >
           {indexing ? t.scanning : t.scan}
         </button>

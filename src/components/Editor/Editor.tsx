@@ -1,4 +1,6 @@
-import { useCallback, useRef, useState, useMemo } from 'react'
+import { createWikilinkSuggestion } from '../../extensions/WikilinkSuggestion/WikilinkSuggestion'
+import type { WikilinkOption } from '../../lib/wikilinks'
+import { useCallback, useRef, useState, useMemo, useLayoutEffect } from 'react'
 import { useT } from '../../contexts/LocaleContext'
 import { useLocale } from '../../hooks/useLocale'
 import { useEditor, EditorContent, Extension } from '@tiptap/react'
@@ -120,6 +122,8 @@ const TitleKeyboardBehavior = Extension.create({
 })
 
 interface EditorProps {
+  wikilinkOptions: WikilinkOption[]
+  currentPath: string
   content: string
   saving: boolean
   isDirty: boolean
@@ -128,8 +132,13 @@ interface EditorProps {
   onWikilinkClick: (title: string) => void
 }
 
-export function Editor({ content, saving, isDirty, onUpdate, onSave, onWikilinkClick }: EditorProps) {
+export function Editor({ wikilinkOptions, currentPath, content, saving, isDirty, onUpdate, onSave, onWikilinkClick }: EditorProps) {
   const t = useT()
+  const wikilinkOptionsRef = useRef({ notes: wikilinkOptions, currentPath, label: t.linkSuggestions, empty: t.noLinkSuggestions })
+  useLayoutEffect(() => {
+    wikilinkOptionsRef.current = { notes: wikilinkOptions, currentPath, label: t.linkSuggestions, empty: t.noLinkSuggestions }
+  }, [wikilinkOptions, currentPath, t])
+  const WikilinkSuggestion = useMemo(() => createWikilinkSuggestion(() => wikilinkOptionsRef.current), [])
   const { locale } = useLocale()
   const SlashCommandExtension = useMemo(() => createSlashCommandExtension(locale), [locale])
   const [tableMenuPos, setTableMenuPos] = useState<TableMenuPos | null>(null)
@@ -195,6 +204,7 @@ export function Editor({ content, saving, isDirty, onUpdate, onSave, onWikilinkC
       TableCell,
       TableHeader,
       WikilinkDecorator,
+      WikilinkSuggestion,
       TagDecorator,
       SlashCommandExtension,
     ],

@@ -101,13 +101,13 @@ function TreeNode({ node, selectedPath, onFileSelect, onFileDelete, onRenameFold
         >
           <span className="tree-chevron" style={{ visibility: 'hidden' }} />
           <span className="tree-icon file"><FileIcon /></span>
-          <span className="tree-label" title={node.name}>{label}</span>
+          <span className="tree-label" data-tooltip={node.name}>{label}</span>
           {canDelete && (
             <button
               className="tree-delete-btn"
               onClick={handleDelete}
               onDragStart={e => e.stopPropagation()}
-              title="파일 삭제"
+              aria-label="파일 삭제" data-tooltip="파일 삭제"
             >
               <TrashIcon />
             </button>
@@ -215,7 +215,7 @@ function TreeNode({ node, selectedPath, onFileSelect, onFileDelete, onRenameFold
             onClick={e => e.stopPropagation()}
           />
         ) : (
-          <span className="tree-label" title={folder.name} onDoubleClick={onRenameFolder ? () => startRename() : undefined}>
+          <span className="tree-label" data-tooltip={folder.name} onDoubleClick={onRenameFolder ? () => startRename() : undefined}>
             {folder.name}
           </span>
         )}

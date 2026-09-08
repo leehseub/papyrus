@@ -76,3 +76,5 @@
   color: var(--highlight);
   font-weight: 600;
 }
+
+.search-result-path { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

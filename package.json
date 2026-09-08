@@ -1,13 +1,16 @@
 {
   "name": "papyrus",
   "private": true,
-  "version": "1.0.11",
+  "version": "1.0.12",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test:graph-rename": "npm run build && electron scripts/graph-rename-smoke.cjs",
+    "test:tooltips": "npm run build && electron scripts/tooltip-smoke.cjs",
+    "test:wikilinks": "npm run build && electron scripts/wikilink-smoke.cjs",
     "test:graph-docking": "npm run build && electron scripts/graph-docking-smoke.cjs",
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite --port 5173 --strictPort\" \"wait-on http://localhost:5173 && electron .\"",

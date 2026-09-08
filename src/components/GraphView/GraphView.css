@@ -401,3 +401,5 @@
 .graph-drag-handle { cursor: grab; flex: 1; min-width: 0; user-select: none; -webkit-app-region: no-drag; }
 .graph-drag-handle:active { cursor: grabbing; }
 .graph-header-actions { flex-shrink: 0; }
+
+.graph-label-context { font-size: 9px; fill: var(--text-dim); pointer-events: none; user-select: none; }

@@ -1,3 +1,4 @@
+import { buildNoteLabels, resolveWikilink } from '../lib/wikilinks'
 import { flattenFiles } from '../lib/fileTree'
 import { useState, useCallback } from 'react'
 import type { FSNode, FileNode } from '../types'
@@ -6,6 +7,8 @@ import type { FSNode, FileNode } from '../types'
 export interface GraphNode {
   id: string
   name: string
+  context: string
+  relativePath: string
   fileNode: FileNode
   x?: number
   y?: number
@@ -33,16 +36,12 @@ export function useGraphData(nodes: FSNode[]) {
   const buildGraph = useCallback(async () => {
     setBuilding(true)
     const files = flattenFiles(nodes)
-    const nameToNode = new Map<string, FileNode>()
-
-    for (const f of files) {
-      nameToNode.set(f.name, f)
-      nameToNode.set(f.name.replace(/\.md$/, ''), f)
-    }
-
+    const labels = buildNoteLabels(files)
     const graphNodes: GraphNode[] = files.map(f => ({
       id: f.path,
-      name: f.name.replace(/\.md$/, ''),
+      name: labels.get(f.path)!.title,
+      context: labels.get(f.path)!.context,
+      relativePath: labels.get(f.path)!.relativePath,
       fileNode: f,
     }))
 
@@ -59,7 +58,7 @@ export function useGraphData(nodes: FSNode[]) {
           let match
           while ((match = re.exec(text)) !== null) {
             const title = match[1]
-            const target = nameToNode.get(title) ?? nameToNode.get(`${title}.md`)
+            const target = resolveWikilink(files, title, file.path)
             if (!target || target.path === file.path) continue
             const key = [file.path, target.path].sort().join('→')
             if (edgeSet.has(key)) continue
