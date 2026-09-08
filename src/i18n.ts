@@ -1,5 +1,6 @@
 export const translations = {
   ko: {
+    loading: '불러오는 중...',
     // Sidebar
     openingVault: '여는 중...',
     openFolder: '폴더 열기',
@@ -78,6 +79,12 @@ export const translations = {
     deleteConnection: '연결 삭제',
     currentFile: '현재 파일',
     note: '노트',
+    link: '링크',
+    selectionLegend: '선택 (S / Ctrl+클릭)',
+    minimize: '최소화',
+    maximize: '최대화',
+    restore: '이전 크기로',
+    close: '닫기',
 
     // Update banner
     updateAvailable: (v: string) => `v${v} 업데이트 가능`,
@@ -90,6 +97,7 @@ export const translations = {
   },
 
   en: {
+    loading: 'Loading...',
     // Sidebar
     openingVault: 'Opening...',
     openFolder: 'Open Folder',
@@ -168,6 +176,12 @@ export const translations = {
     deleteConnection: 'Delete connection',
     currentFile: 'Current file',
     note: 'Note',
+    link: 'Link',
+    selectionLegend: 'Selection (S / Ctrl+click)',
+    minimize: 'Minimize',
+    maximize: 'Maximize',
+    restore: 'Restore',
+    close: 'Close',
 
     // Update banner
     updateAvailable: (v: string) => `v${v} available`,

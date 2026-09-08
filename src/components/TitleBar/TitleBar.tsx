@@ -1,7 +1,9 @@
+import { useT } from '../../contexts/LocaleContext'
 import { useState, useEffect } from 'react'
 import './TitleBar.css'
 
 export function TitleBar({ title = "Papyrus" }: { title?: string }) {
+  const t = useT()
   const [isMaximized, setIsMaximized] = useState(false)
 
   useEffect(() => {
@@ -20,12 +22,12 @@ export function TitleBar({ title = "Papyrus" }: { title?: string }) {
       <span className="title-bar-name">{title}</span>
       <div className="title-bar-drag" />
       <div className="title-bar-controls">
-        <button className="titlebar-btn titlebar-min" onClick={handleMinimize} title="최소화">
+        <button className="titlebar-btn titlebar-min" onClick={handleMinimize} title={t.minimize}>
           <svg width="10" height="1" viewBox="0 0 10 1" fill="none">
             <rect width="10" height="1.2" y="0" fill="currentColor" />
           </svg>
         </button>
-        <button className="titlebar-btn titlebar-max" onClick={handleMaximize} title={isMaximized ? '이전 크기로' : '최대화'}>
+        <button className="titlebar-btn titlebar-max" onClick={handleMaximize} title={isMaximized ? t.restore : t.maximize}>
           {isMaximized ? (
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
               <rect x="0" y="2" width="8" height="8" stroke="currentColor" strokeWidth="1.1" />
@@ -37,7 +39,7 @@ export function TitleBar({ title = "Papyrus" }: { title?: string }) {
             </svg>
           )}
         </button>
-        <button className="titlebar-btn titlebar-close" onClick={handleClose} title="닫기">
+        <button className="titlebar-btn titlebar-close" onClick={handleClose} title={t.close}>
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
           </svg>

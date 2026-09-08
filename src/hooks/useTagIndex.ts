@@ -1,16 +1,9 @@
+import { flattenFiles } from '../lib/fileTree'
 import { useState, useCallback } from 'react'
-import type { FSNode, FileNode, FolderNode } from '../types'
+import type { FSNode, FileNode } from '../types'
 
 const TAG_RE = /(?<![&\w])#([a-zA-Z가-힣0-9_/-]+)/g
 
-function flattenFiles(nodes: FSNode[]): FileNode[] {
-  const files: FileNode[] = []
-  for (const node of nodes) {
-    if (node.kind === 'file') files.push(node)
-    else files.push(...flattenFiles((node as FolderNode).children))
-  }
-  return files
-}
 
 export type TagMap = Map<string, FileNode[]>
 

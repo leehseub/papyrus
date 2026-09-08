@@ -1,17 +1,7 @@
+import { flattenFiles } from '../lib/fileTree'
 import { useState, useEffect, useCallback } from 'react'
-import type { FSNode, FileNode, FolderNode, SearchResult } from '../types'
+import type { FSNode, SearchResult } from '../types'
 
-function flattenFiles(nodes: FSNode[]): FileNode[] {
-  const files: FileNode[] = []
-  for (const node of nodes) {
-    if (node.kind === 'file') {
-      files.push(node)
-    } else {
-      files.push(...flattenFiles((node as FolderNode).children))
-    }
-  }
-  return files
-}
 
 function buildExcerpt(text: string, index: number, queryLen: number): string {
   const CONTEXT = 60

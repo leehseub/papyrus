@@ -1,7 +1,11 @@
+import { useLocale } from './hooks/useLocale'
+import { translations } from './i18n'
+import { LocaleContext } from './contexts/LocaleContext'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { TitleBar } from './components/TitleBar/TitleBar'
 import * as d3 from 'd3'
-import { useGroups, hullPath } from './hooks/useGroups'
+import { useGroups } from './hooks/useGroups'
+import { hullPath } from './lib/graphGeometry'
 import type { NodeGroup } from './hooks/useGroups'
 import { useGroupLinks } from './hooks/useGroupLinks'
 import type { GroupLink } from './hooks/useGroupLinks'
@@ -19,6 +23,10 @@ interface SimpleEdge {
 }
 
 export function GraphWindow() {
+  const { locale } = useLocale()
+  const t = translations[locale]
+
+  useEffect(() => { document.title = `Papyrus — ${t.graphView}` }, [t.graphView])
   const svgRef = useRef<SVGSVGElement>(null)
   const [nodes, setNodes] = useState<SimpleNode[]>([])
   const [edges, setEdges] = useState<SimpleEdge[]>([])
@@ -76,7 +84,6 @@ export function GraphWindow() {
   groupLinksRef.current = groupLinks
 
   useEffect(() => {
-    document.title = 'Papyrus — 그래프 뷰'
     const channel = new BroadcastChannel('papyrus-graph')
     channelRef.current = channel
     channel.postMessage({ type: 'ready' })
@@ -530,7 +537,7 @@ export function GraphWindow() {
   }
 
   function handleCreateGroup() {
-    const name = newGroupName.trim() || `그룹 ${groups.length + 1}`
+    const name = newGroupName.trim() || `${t.groups} ${groups.length + 1}`
     createGroup(name, [...selectedNodes])
     setSelectedNodes(new Set())
     setNewGroupName('')
@@ -538,19 +545,20 @@ export function GraphWindow() {
   }
 
   return (
+    <LocaleContext.Provider value={t}>
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-sidebar)' }}>
-      {!!window.electronAPI && <TitleBar title="Papyrus — 그래프" />}
+      {!!window.electronAPI && <TitleBar title={`Papyrus — ${t.graphView}`} />}
       <div className="graph-header">
-        <span className="graph-title">Papyrus 그래프</span>
+        <span className="graph-title">Papyrus {t.graphView}</span>
         <div className="graph-header-actions">
           <button
             className="graph-build-btn"
             disabled={building}
             onClick={() => { setBuilding(true); channelRef.current?.postMessage({ type: 'requestBuild' }) }}
           >
-            {building ? '분석 중...' : '분석'}
+            {building ? t.analyzing : t.analyze}
           </button>
-          <Tooltip content={selectionMode ? '선택 모드 끄기 (Esc)' : '선택 모드 (S / Ctrl+클릭)'}>
+          <Tooltip content={selectionMode ? t.selectionModeOn : t.selectionModeOff}>
             <button
               className={`graph-float-btn${selectionMode ? ' active' : ''}`}
               onClick={() => setSelectionMode(v => !v)}
@@ -581,16 +589,16 @@ export function GraphWindow() {
           setSelectedNodes(new Set())
         }}
       >
-        {building && <p className="graph-status">파일 분석 중...</p>}
-        {!building && !hasData && <p className="graph-status">분석 버튼을 눌러 그래프를 생성하세요.</p>}
-        {!building && hasData && nodes.length === 0 && <p className="graph-status">파일이 없습니다.</p>}
+        {building && <p className="graph-status">{t.buildingGraph}</p>}
+        {!building && !hasData && <p className="graph-status">{t.emptyGraph}</p>}
+        {!building && hasData && nodes.length === 0 && <p className="graph-status">{t.noFiles}</p>}
         <div ref={selRectDivRef} className="sel-rect-overlay" style={{ display: 'none' }} />
         <svg ref={svgRef} className={`graph-svg${selectionMode ? ' selection-mode' : ''}`} />
       </div>
 
       {selectedNodes.size > 0 && (
         <div className="graph-selection-bar">
-          <span className="selection-count">{selectedNodes.size}개 선택됨</span>
+          <span className="selection-count">{t.selectedCount(selectedNodes.size)}</span>
           <div className="selection-actions">
             {showGroupForm ? (
               <>
@@ -599,16 +607,16 @@ export function GraphWindow() {
                   value={newGroupName}
                   onChange={e => setNewGroupName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleCreateGroup(); if (e.key === 'Escape') setShowGroupForm(false) }}
-                  placeholder="그룹 이름"
+                  placeholder={t.groupNamePlaceholder}
                   autoFocus
                 />
-                <button className="graph-build-btn" onClick={handleCreateGroup}>확인</button>
-                <button className="graph-float-btn" onClick={() => setShowGroupForm(false)}>취소</button>
+                <button className="graph-build-btn" onClick={handleCreateGroup}>{t.confirm}</button>
+                <button className="graph-float-btn" onClick={() => setShowGroupForm(false)}>{t.cancel}</button>
               </>
             ) : (
               <>
-                <button className="graph-build-btn" onClick={() => setShowGroupForm(true)}>그룹 만들기</button>
-                <button className="graph-float-btn" onClick={() => setSelectedNodes(new Set())}>선택 해제</button>
+                <button className="graph-build-btn" onClick={() => setShowGroupForm(true)}>{t.createGroup}</button>
+                <button className="graph-float-btn" onClick={() => setSelectedNodes(new Set())}>{t.deselect}</button>
               </>
             )}
           </div>
@@ -618,12 +626,12 @@ export function GraphWindow() {
       {groups.length > 0 && (
         <div className="graph-groups">
           <p className="graph-groups-title">
-            {linkSource ? <span className="link-mode-label">→ <b>{linkSource.name}</b> 연결 대상 선택</span> : '그룹'}
+            {linkSource ? <span className="link-mode-label">{t.connectTarget(linkSource.name)}</span> : t.groups}
             {linkSource && (
-              <button className="group-link-cancel-btn" onClick={() => setLinkSource(null)}>취소</button>
+              <button className="group-link-cancel-btn" onClick={() => setLinkSource(null)}>{t.cancel}</button>
             )}
           </p>
-          {linkSource && <p className="link-mode-hint">그룹을 선택하거나 캔버스의 노드를 클릭하세요</p>}
+          {linkSource && <p className="link-mode-hint">{t.linkModeHint}</p>}
           <ul className="group-list">
             {groups.map(g => (
               <li
@@ -638,18 +646,18 @@ export function GraphWindow() {
               >
                 <span className="group-dot" style={{ background: g.color }} />
                 <span className="group-name">{g.name}</span>
-                {!linkSource && <span className="group-count">{g.paths.length}개</span>}
+                {!linkSource && <span className="group-count">{t.nodeCount(g.paths.length)}</span>}
                 {linkSource ? (
-                  linkSource.id !== g.id && <span className="group-connect-hint">연결</span>
+                  linkSource.id !== g.id && <span className="group-connect-hint">{t.connect}</span>
                 ) : (
                   <>
-                    <Tooltip content="연결 만들기">
+                    <Tooltip content={t.createLink}>
                       <button
                         className="group-link-btn"
                         onClick={e => { e.stopPropagation(); setLinkSource({ id: g.id, name: g.name }) }}
                       >→</button>
                     </Tooltip>
-                    <Tooltip content="그룹 삭제">
+                    <Tooltip content={t.deleteGroup}>
                       <button className="group-delete-btn" onClick={() => handleDeleteGroup(g.id)}>×</button>
                     </Tooltip>
                   </>
@@ -662,7 +670,7 @@ export function GraphWindow() {
 
       {groupLinks.length > 0 && (
         <div className="graph-groups">
-          <p className="graph-groups-title">연결</p>
+          <p className="graph-groups-title">{t.connections}</p>
           <ul className="group-list">
             {groupLinks.map(l => {
               const fromName = groups.find(g => g.id === l.fromId)?.name ?? '?'
@@ -672,7 +680,7 @@ export function GraphWindow() {
               return (
                 <li key={l.id} className="group-item">
                   <span className="group-link-label">{fromName} → {toName}</span>
-                  <Tooltip content="연결 삭제">
+                  <Tooltip content={t.deleteConnection}>
                     <button className="group-delete-btn" onClick={() => deleteGroupLink(l.id)}>×</button>
                   </Tooltip>
                 </li>
@@ -683,11 +691,12 @@ export function GraphWindow() {
       )}
 
       <div className="graph-legend">
-        <span className="legend-item legend-current">현재 파일</span>
-        <span className="legend-item legend-normal">노트</span>
-        <span className="legend-item legend-edge">링크</span>
-        <span className="legend-item legend-selected">선택 (Shift+클릭)</span>
+        <span className="legend-item legend-current">{t.currentFile}</span>
+        <span className="legend-item legend-normal">{t.note}</span>
+        <span className="legend-item legend-edge">{t.link}</span>
+        <span className="legend-item legend-selected">{t.selectionLegend}</span>
       </div>
     </div>
+    </LocaleContext.Provider>
   )
 }

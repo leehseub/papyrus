@@ -1,5 +1,6 @@
+import { flattenFiles } from '../lib/fileTree'
 import { useState, useCallback } from 'react'
-import type { FSNode, FileNode, FolderNode } from '../types'
+import type { FSNode, FileNode } from '../types'
 
 
 export interface GraphNode {
@@ -24,14 +25,6 @@ export interface GraphData {
   edges: GraphEdge[]
 }
 
-function flattenFiles(nodes: FSNode[]): FileNode[] {
-  const files: FileNode[] = []
-  for (const node of nodes) {
-    if (node.kind === 'file') files.push(node)
-    else files.push(...flattenFiles((node as FolderNode).children))
-  }
-  return files
-}
 
 export function useGraphData(nodes: FSNode[]) {
   const [graphData, setGraphData] = useState<GraphData | null>(null)

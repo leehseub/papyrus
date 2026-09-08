@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { flattenFiles } from './lib/fileTree'
+import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
 import { TitleBar } from './components/TitleBar/TitleBar'
 import { useTheme } from './hooks/useTheme'
 import { useLocale, type Locale } from './hooks/useLocale'
@@ -18,20 +19,13 @@ import { FileTree, getDraggedFileNode } from './components/FileTree/FileTree'
 import { TabBar } from './components/TabBar/TabBar'
 import { Search } from './components/Search/Search'
 import { TagPanel } from './components/TagPanel/TagPanel'
-import { Editor } from './components/Editor/Editor'
-import { GraphView } from './components/GraphView/GraphView'
 import type { GraphViewHandle, NodePositions } from './components/GraphView/GraphView'
-import type { FileNode, FSNode, FolderNode } from './types'
+import type { FileNode } from './types'
 import './App.css'
 
-function flattenFiles(nodes: FSNode[]): FileNode[] {
-  const files: FileNode[] = []
-  for (const node of nodes) {
-    if (node.kind === 'file') files.push(node)
-    else files.push(...flattenFiles((node as FolderNode).children))
-  }
-  return files
-}
+const Editor = lazy(() => import('./components/Editor/Editor').then(module => ({ default: module.Editor })))
+const GraphView = lazy(() => import('./components/GraphView/GraphView').then(module => ({ default: module.GraphView })))
+
 
 function serializeGraphData(gd: GraphData) {
   return {
@@ -728,48 +722,52 @@ function App() {
               onClose={handleCloseTab}
             />
             {activeTab ? (
-              <Editor
-                key={activeTab.file.path}
-                content={displayContent}
-                saving={saving}
-                isDirty={activeTab.content !== activeTab.savedContent}
-                onUpdate={handleEditorUpdate}
-                onSave={handleSaveActive}
-                onWikilinkClick={handleWikilinkClick}
-              />
+              <Suspense fallback={<p className="placeholder" role="status">{t.loading}</p>}>
+                <Editor
+                  key={activeTab.file.path}
+                  content={displayContent}
+                  saving={saving}
+                  isDirty={activeTab.content !== activeTab.savedContent}
+                  onUpdate={handleEditorUpdate}
+                  onSave={handleSaveActive}
+                  onWikilinkClick={handleWikilinkClick}
+                />
+              </Suspense>
             ) : (
               <p className="placeholder">{t.filePlaceholder}</p>
             )}
           </main>
 
           {showGraph && (
-            <GraphView
-              ref={graphViewRef}
-              graphData={graphData}
-              building={buildingGraph}
-              selectedPath={selectedFile?.path ?? null}
-              onFileSelect={handleGraphFileSelect}
-              onBuild={buildGraph}
-              width={graphWidth}
-              onResizerMouseDown={onGraphResizerMouseDown}
-              onOpenInWindow={openGraphWindow}
-              onPositionsChange={positions => {
-                const posObj: Record<string, { x: number; y: number }> = {}
-                positions.forEach((pos, id) => { posObj[id] = pos })
-                graphChannelRef.current?.postMessage({ type: 'nodePositions', data: posObj })
-              }}
-              groups={groups}
-              onCreateGroup={createGroup}
-              onDeleteGroup={id => {
-                groupLinks
-                  .filter(l => l.fromId === id || (l.toType === 'group' && l.toId === id))
-                  .forEach(l => deleteGroupLink(l.id))
-                deleteGroup(id)
-              }}
-              groupLinks={groupLinks}
-              onCreateGroupLink={createGroupLink}
-              onDeleteGroupLink={deleteGroupLink}
-            />
+            <Suspense fallback={<div style={{ width: graphWidth, flexShrink: 0 }} role="status">{t.loading}</div>}>
+              <GraphView
+                ref={graphViewRef}
+                graphData={graphData}
+                building={buildingGraph}
+                selectedPath={selectedFile?.path ?? null}
+                onFileSelect={handleGraphFileSelect}
+                onBuild={buildGraph}
+                width={graphWidth}
+                onResizerMouseDown={onGraphResizerMouseDown}
+                onOpenInWindow={openGraphWindow}
+                onPositionsChange={positions => {
+                  const posObj: Record<string, { x: number; y: number }> = {}
+                  positions.forEach((pos, id) => { posObj[id] = pos })
+                  graphChannelRef.current?.postMessage({ type: 'nodePositions', data: posObj })
+                }}
+                groups={groups}
+                onCreateGroup={createGroup}
+                onDeleteGroup={id => {
+                  groupLinks
+                    .filter(l => l.fromId === id || (l.toType === 'group' && l.toId === id))
+                    .forEach(l => deleteGroupLink(l.id))
+                  deleteGroup(id)
+                }}
+                groupLinks={groupLinks}
+                onCreateGroupLink={createGroupLink}
+                onDeleteGroupLink={deleteGroupLink}
+              />
+            </Suspense>
           )}
         </div>
       </div>

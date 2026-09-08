@@ -3,7 +3,7 @@ import { useT } from '../../contexts/LocaleContext'
 import * as d3 from 'd3'
 import type { GraphData, GraphNode, GraphEdge } from '../../hooks/useGraphData'
 import type { NodeGroup } from '../../hooks/useGroups'
-import { hullPath } from '../../hooks/useGroups'
+import { hullPath } from '../../lib/graphGeometry'
 import type { GroupLink } from '../../hooks/useGroupLinks'
 import { Tooltip } from '../Tooltip/Tooltip'
 import type { FileNode } from '../../types'
@@ -688,8 +688,8 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
       <div className="graph-legend">
         <span className="legend-item legend-current">{t.currentFile}</span>
         <span className="legend-item legend-normal">{t.note}</span>
-        <span className="legend-item legend-edge">링크</span>
-        <span className="legend-item legend-selected">선택</span>
+        <span className="legend-item legend-edge">{t.link}</span>
+        <span className="legend-item legend-selected">{t.selectionLegend}</span>
       </div>
     </aside>
   )

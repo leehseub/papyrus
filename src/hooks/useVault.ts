@@ -1,3 +1,4 @@
+import { flattenFiles } from '../lib/fileTree'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { FolderNode, FileNode } from '../types'
 import { saveVaultHandle, loadVaultHandle } from '../lib/vaultStorage'
@@ -21,14 +22,6 @@ function replaceWikilinks(content: string, oldName: string, newName: string): st
   )
 }
 
-function flattenFiles(nodes: (FileNode | FolderNode)[]): FileNode[] {
-  const files: FileNode[] = []
-  for (const node of nodes) {
-    if (node.kind === 'file') files.push(node)
-    else files.push(...flattenFiles((node as FolderNode).children))
-  }
-  return files
-}
 
 async function buildTree(
   dirHandle: FileSystemDirectoryHandle,
