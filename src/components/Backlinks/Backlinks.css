@@ -1,0 +1,25 @@
+.backlinks-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.backlinks-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; font-size: 13px; color: var(--text-primary); }
+.backlinks-target { margin: 0 12px 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.backlinks-eyebrow { display: block; margin-bottom: 6px; font-size: 11px; color: var(--text-muted); }
+.backlinks-target > strong { display: block; font-size: 15px; line-height: 1.45; color: var(--text-primary); }
+.backlinks-summary { display: block; margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.backlinks-list { overflow-y: auto; flex: 1; padding: 0 10px 12px; }
+.backlinks-status { padding: 12px 4px; font-size: 12px; line-height: 1.7; color: var(--text-muted); }
+.backlink-card { margin-bottom: 10px; padding-bottom: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-main); overflow: hidden; }
+.backlink-result { display: flex; align-items: center; gap: 8px; width: 100%; padding: 11px 12px; border: none; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; line-height: 1.5; }
+.backlink-result:hover { background: var(--bg-hover); }
+.backlink-result:focus-visible, .backlink-more summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.backlink-source { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.backlink-name { display: block; font-size: 13px; font-weight: 600; }
+.backlink-context { display: block; margin-top: 3px; font-size: 11px; line-height: 1.5; color: var(--text-muted); overflow-wrap: anywhere; }
+.backlink-open { flex-shrink: 0; color: var(--text-muted); font-size: 14px; }
+.backlink-excerpt { margin: 2px 12px 8px; padding: 3px 0 3px 10px; border-left: 2px solid var(--border); font-size: 12px; line-height: 1.8; color: var(--text-secondary); overflow-wrap: anywhere; }
+.backlink-excerpt:last-child { margin-bottom: 0; }
+.backlink-surrounding { font-size: 11px; line-height: 1.7; opacity: 0.65; margin: 0; }
+.backlink-matched { margin: 5px 0; }
+.backlink-matched:first-child { margin-top: 0; }
+.backlink-matched:last-child { margin-bottom: 0; }
+.backlink-excerpt mark { color: var(--link-color); background: var(--link-bg); border-radius: 3px; padding: 1px 3px; font-weight: 600; }
+.backlink-more summary { margin: 8px 12px 0; cursor: pointer; color: var(--text-muted); font-size: 11px; line-height: 1.6; }
+.backlink-more[open] summary { margin-bottom: 8px; }

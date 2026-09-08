@@ -32,6 +32,13 @@ export const translations = {
 
     // Editor
     titlePlaceholder: '제목 없음',
+    backlinks: '백링크',
+    backlinksCurrent: '현재 노트',
+    backlinksSources: (n: number) => `이 노트를 참조하는 노트 ${n}개`,
+    backlinksMore: (n: number) => `문맥 ${n}개 더 보기`,
+    backlinksSelect: '노트를 열면 이 노트를 참조하는 노트가 표시됩니다.',
+    backlinksEmpty: '이 노트를 참조하는 다른 노트가 없습니다.',
+    backlinksReadError: '일부 노트를 읽지 못했습니다. 새로고침해 주세요.',
     linkSuggestions: '연결할 노트',
     noLinkSuggestions: '일치하는 노트가 없습니다.',
     addRow: '행 추가',
@@ -134,6 +141,13 @@ export const translations = {
 
     // Editor
     titlePlaceholder: 'Untitled',
+    backlinks: 'Backlinks',
+    backlinksCurrent: 'Current note',
+    backlinksSources: (n: number) => `${n} notes link to this note`,
+    backlinksMore: (n: number) => `Show ${n} more excerpts`,
+    backlinksSelect: 'Open a note to see which notes link to it.',
+    backlinksEmpty: 'No other notes link to this note.',
+    backlinksReadError: 'Some notes could not be read. Please refresh.',
     linkSuggestions: 'Link to a note',
     noLinkSuggestions: 'No matching notes.',
     addRow: 'Add Row',

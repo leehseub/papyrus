@@ -21,6 +21,7 @@ import { useGroupLinks } from './hooks/useGroupLinks'
 import { FileTree, getDraggedFileNode } from './components/FileTree/FileTree'
 import { TabBar } from './components/TabBar/TabBar'
 import { Search } from './components/Search/Search'
+import { Backlinks } from './components/Backlinks/Backlinks'
 import { TagPanel } from './components/TagPanel/TagPanel'
 import type { GraphViewHandle, NodePositions } from './components/GraphView/GraphView'
 import type { FileNode } from './types'
@@ -61,6 +62,7 @@ function App() {
   }, [langMenuOpen])
   const { vault, loading, error, pendingHandle, reconnectVault, openVault, openFile, refreshVault, createFile, deleteFile, updateLinksForRename, moveFile, renameFolder } = useVault()
   const { width, isOpen, isResizing, toggle, onResizerMouseDown } = useSidebarResize()
+  const vaultFiles = useMemo(() => flattenFiles(vault?.children ?? []), [vault])
   const noteLabels = useMemo(() => buildNoteLabels(flattenFiles(vault?.children ?? [])), [vault])
   const wikilinkOptions = useMemo(() => buildWikilinkOptions(flattenFiles(vault?.children ?? [])), [vault])
   const { saving, save, rename } = useFile()
@@ -69,7 +71,7 @@ function App() {
   // selectedFile is derived from the active tab
   const selectedFile = activeTab?.file ?? null
 
-  const [sidebarMode, setSidebarMode] = useState<'tree' | 'search' | 'tags'>('tree')
+  const [sidebarMode, setSidebarMode] = useState<'tree' | 'search' | 'tags' | 'backlinks'>('tree')
   const { query, setQuery, results, searching, clear } = useSearch(vault?.children ?? [])
   const { tagMap, indexing, buildIndex } = useTagIndex(vault?.children ?? [])
   const { graphData, building: buildingGraph, buildGraph } = useGraphData(vault?.children ?? [])
@@ -551,6 +553,9 @@ function App() {
                       <line x1="5" y1="9" x2="11" y2="12" stroke="currentColor" strokeWidth="1.2"/>
                     </svg>
                   </button>
+                  <button className={`search-toggle-btn backlinks-toggle${sidebarMode === 'backlinks' ? ' active' : ''}`} onClick={() => setSidebarMode(mode => mode === 'backlinks' ? 'tree' : 'backlinks')} aria-label={t.backlinks} data-tooltip={t.backlinks} aria-pressed={sidebarMode === 'backlinks'}>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 3L2 7l4 4M2 7h8a4 4 0 0 1 0 8" /></svg>
+                  </button>
                 </div>
               </div>
               {sidebarMode === 'tree' && (
@@ -642,6 +647,8 @@ function App() {
                 onQueryChange={setQuery}
                 onFileSelect={handleFileSelect}
               />
+            ) : sidebarMode === 'backlinks' ? (
+              <Backlinks files={vaultFiles} tabs={tabs} selectedPath={selectedFile?.path ?? null} labels={noteLabels} onSelect={loadAndOpenTab} />
             ) : (
               <TagPanel
                 tagMap={tagMap}
