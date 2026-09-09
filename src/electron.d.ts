@@ -9,6 +9,7 @@ interface ElectronAPI {
   onUpdateProgress: (cb: (percent: number) => void) => void
   onUpdateReady: (cb: (version: string) => void) => void
   onUpdateStatus: (cb: (status: string) => void) => void
+  getPendingUpdate: () => Promise<{ channel: string; data: string } | null>
   downloadUpdate: () => void
   restartAndInstall: () => void
   getVersion: () => Promise<string>

@@ -439,6 +439,20 @@ function App() {
     window.electronAPI?.onUpdateStatus?.((status: string) => {
       if (status === 'not-available') setIsLatest(true)
     })
+    // Race condition fix: IPC listeners are registered after React mount,
+    // so a fast update-available response may have already fired before mount.
+    // Request any cached pending update from the main process.
+    window.electronAPI?.getPendingUpdate?.().then((pending: { channel: string; data: string } | null) => {
+      if (!pending) return
+      const skipped = localStorage.getItem('papyrus-skipped-version')
+      if (pending.channel === 'update-available' && pending.data !== skipped) {
+        setAvailableVersion(pending.data)
+        setBannerDismissed(false)
+      } else if (pending.channel === 'update-ready' && pending.data !== skipped) {
+        setUpdateVersion(pending.data)
+        setBannerDismissed(false)
+      }
+    }).catch(() => {})
   }, [])
 
   function handleDownloadUpdate() {

@@ -96,15 +96,23 @@ app.whenReady().then(() => {
   })
 
   if (!isDev) {
+    // Cache update state so the renderer can request it after mount
+    let pendingUpdate = null // { channel, data }
+
     function sendToRenderer(channel, data) {
       const win = BrowserWindow.getAllWindows()[0]
-      win?.webContents.send(channel, data)
+      if (win?.webContents) {
+        win.webContents.send(channel, data)
+      } else {
+        pendingUpdate = { channel, data }
+      }
     }
 
     autoUpdater.autoDownload = false
     autoUpdater.autoInstallOnAppQuit = true
 
     autoUpdater.on('update-available', (info) => {
+      pendingUpdate = { channel: 'update-available', data: info.version }
       sendToRenderer('update-available', info.version)
     })
     autoUpdater.on('update-not-available', () => {
@@ -114,11 +122,14 @@ app.whenReady().then(() => {
       sendToRenderer('update-progress', Math.round(p.percent))
     })
     autoUpdater.on('update-downloaded', (info) => {
+      pendingUpdate = { channel: 'update-ready', data: info.version }
       sendToRenderer('update-ready', info.version)
     })
     autoUpdater.on('error', (err) => {
       sendToRenderer('update-status', `error: ${err.message}`)
     })
+
+    ipcMain.handle('get-pending-update', () => pendingUpdate)
 
     autoUpdater.checkForUpdates()
   }
