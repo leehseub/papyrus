@@ -29,3 +29,4 @@
 .wikilink-option-path { font-size: 11px; color: var(--text-muted); }
 .wikilink-option-title, .wikilink-option-path { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
 .wikilink-empty { padding: 10px; color: var(--text-muted); font-size: 12px; }
+.wikilink-create { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0 0 4px 4px; }

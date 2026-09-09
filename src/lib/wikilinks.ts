@@ -57,6 +57,16 @@ export function validNewNoteName(query: string): string | null {
   return name
 }
 
+export function nextNewNoteName(query: string, notes: Pick<WikilinkOption, 'title'>[]): string | null {
+  const base = validNewNoteName(query)
+  if (!base) return null
+  const normalize = (name: string) => name.normalize('NFC').toLocaleLowerCase()
+  const occupied = new Set(notes.map(note => normalize(note.title)))
+  let name = base
+  for (let index = 1; occupied.has(normalize(name)); index++) name = `${base}(${index})`
+  return validNewNoteName(name)
+}
+
 export function vaultRelativePath(path: string): string {
   return path.includes('/') ? path.slice(path.indexOf('/') + 1) : path
 }

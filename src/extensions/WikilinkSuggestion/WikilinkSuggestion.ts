@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
 import Suggestion, { exitSuggestion } from '@tiptap/suggestion'
 import type { SuggestionProps } from '@tiptap/suggestion'
-import { filterWikilinkOptions, vaultRelativePath, validNewNoteName } from '../../lib/wikilinks'
+import { filterWikilinkOptions, vaultRelativePath, nextNewNoteName } from '../../lib/wikilinks'
 import type { WikilinkOption } from '../../lib/wikilinks'
 import './WikilinkSuggestion.css'
 
@@ -39,8 +39,8 @@ export function createWikilinkSuggestion(getOptions: () => Options) {
         items: ({ query }) => {
           const options = getOptions()
           const items = filterWikilinkOptions(options.notes, query, options.currentPath)
-          const name = validNewNoteName(query)
-          if (options.create && !items.length && name && !options.notes.some(note => note.title.normalize('NFC').toLocaleLowerCase() === name.normalize('NFC').toLocaleLowerCase())) {
+          const name = nextNewNoteName(query, options.notes)
+          if (options.create && name) {
             items.push({ title: name, target: name, path: `${options.currentPath.slice(0, options.currentPath.lastIndexOf('/'))}/${name}.md`, context: '', create: true })
           }
           return items
