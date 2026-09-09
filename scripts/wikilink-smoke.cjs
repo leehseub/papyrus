@@ -106,11 +106,11 @@ app.whenReady().then(async () => {
     assert.equal(await body(), '[[Better]]');
     await reset(); await trigger('한글 '); await press('Tab');
     assert.equal(await body(), '[[한글 노트]]');
-    await reset(); await trigger('zzzz');
+    await reset(); await trigger('invalid/name');
     assert.equal(await js("document.querySelectorAll('.wikilink-option').length"), 0);
     assert.ok(await js("!!document.querySelector('.wikilink-empty')"));
     await press('Escape'); await until("!document.querySelector('.wikilink-menu')");
-    assert.equal(await body(), '[[zzzz]]');
+    assert.equal(await body(), '[[invalid/name]]');
     await reset(); await trigger('Same');
     await until("document.querySelectorAll('.wikilink-option').length===2");
     assert.deepEqual(await js("[...document.querySelectorAll('.wikilink-option-path')].map(el=>el.textContent)"),['one','two']);
@@ -199,7 +199,20 @@ app.whenReady().then(async () => {
     await until("!!document.querySelector('[role=tooltip]')");
     await js("document.querySelector('#tooltip-long-path').remove()");
     await until("!document.querySelector('[role=tooltip]')");
-    console.log('PASS: autocomplete, keyboard/IME, code exclusion, duplicate targets, minimal path labels in menu/tabs/search/graph/PiP, full-path tooltips');
+    await js("document.querySelector('.tab[data-path$=\"/two/Same.md\"]').click()");
+    await until("document.querySelector('.tab-active')?.dataset.path.endsWith('/two/Same.md')");
+    const createdName = 'Created-' + Date.now();
+    await reset(); await trigger(createdName);
+    await until("!!document.querySelector('.wikilink-create')");
+    await press('Enter');
+    await until("!document.querySelector('.wikilink-menu')");
+    assert.equal(await body(), '[[' + createdName + ']]');
+    assert.equal(fs.readFileSync(path.join(fixture,'two',createdName+'.md'),'utf8'), '# '+createdName+'\n');
+    await reset(); await trigger(createdName);
+    assert.equal(await js("!!document.querySelector('.wikilink-create')"),false);
+    await press('Escape');
+    for(const invalid of ['../escape','CON','bad:name','trailing.']) assert.equal(helpers.validNewNoteName(invalid),null);
+    console.log('PASS: autocomplete, note creation in source folder, existing-note exclusion, invalid names, backlinks, graph and tooltips');
     app.exit(0);
   } catch (error) { console.error(error); app.exit(1); }
 });

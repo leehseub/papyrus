@@ -44,10 +44,17 @@ export function buildNoteLabels(files: Pick<FileNode, 'name' | 'path'>[]): Map<s
 }
 
 export interface WikilinkOption {
+  create?: boolean
   context: string
   title: string
   path: string
   target: string
+}
+
+export function validNewNoteName(query: string): string | null {
+  const name = query.trim().replace(/\.md$/i, '')
+  if (!name || name.length > 120 || [...name].some(char => char.charCodeAt(0) < 32 || '<>:"/\\|?*[]#'.includes(char)) || /[. ]$/.test(name) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)) return null
+  return name
 }
 
 export function vaultRelativePath(path: string): string {

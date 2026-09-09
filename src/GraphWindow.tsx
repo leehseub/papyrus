@@ -178,6 +178,7 @@ export function GraphWindow() {
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 4])
       .filter(event => {
+        if (event.type === 'mousedown' && event.button === 1) return true
         if (selectionModeRef.current && event.type === 'mousedown') return false
         return !event.button
       })
@@ -219,7 +220,7 @@ export function GraphWindow() {
               return next
             })
           } else {
-            setSelectedNodes(new Set([d.id]))
+            setSelectedNodes(prev => prev.size === 1 && prev.has(d.id) ? new Set() : new Set([d.id]))
           }
           return
         }
@@ -503,7 +504,7 @@ export function GraphWindow() {
 
     function onMouseUp(e: MouseEvent) {
       const start = dragStartRef.current
-      if (!start) return
+      if (!start || e.button !== 0) return
       dragStartRef.current = null
       didDragRef.current = true
       hideSelRect()
@@ -527,9 +528,9 @@ export function GraphWindow() {
           (n.x ?? 0) >= x0 && (n.x ?? 0) <= x1 &&
           (n.y ?? 0) >= y0 && (n.y ?? 0) <= y1
         )
-        if (inRect.length > 0) {
-          setSelectedNodes(new Set(inRect.map(n => n.id)))
-        }
+        setSelectedNodes(new Set(inRect.map(n => n.id)))
+      } else {
+        setSelectedNodes(new Set())
       }
     }
 
@@ -608,9 +609,10 @@ export function GraphWindow() {
         ref={canvasWrapRef}
         style={{ flex: 1 }}
         onMouseDown={e => {
-          if (!selectionMode) return
+          if (!selectionMode || e.button !== 0) return
           if ((e.target as Element).closest('.graph-node')) return
           e.preventDefault()
+          didDragRef.current = false
           dragStartRef.current = { x: e.clientX, y: e.clientY }
         }}
         onClick={e => {

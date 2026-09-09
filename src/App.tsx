@@ -60,7 +60,7 @@ function App() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [langMenuOpen])
-  const { vault, loading, error, pendingHandle, reconnectVault, openVault, openFile, refreshVault, createFile, deleteFile, updateLinksForRename, moveFile, renameFolder } = useVault()
+  const { vault, loading, error, pendingHandle, reconnectVault, openVault, openFile, refreshVault, createFile, createLinkedNote, deleteFile, updateLinksForRename, moveFile, renameFolder } = useVault()
   const { width, isOpen, isResizing, toggle, onResizerMouseDown } = useSidebarResize()
   const vaultFiles = useMemo(() => flattenFiles(vault?.children ?? []), [vault])
   const noteLabels = useMemo(() => buildNoteLabels(flattenFiles(vault?.children ?? [])), [vault])
@@ -748,6 +748,10 @@ function App() {
             {activeTab ? (
               <Suspense fallback={<p className="placeholder" role="status">{t.loading}</p>}>
                 <Editor
+                  onCreateWikilink={activeTab.file.dirHandle ? async name => {
+                    const file = await createLinkedNote(name, activeTab.file)
+                    return buildWikilinkOptions([file])[0]
+                  } : undefined}
                   wikilinkOptions={wikilinkOptions}
                   currentPath={activeTab.file.path}
                   key={activeTab.file.path}

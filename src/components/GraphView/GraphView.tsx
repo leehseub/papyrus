@@ -154,6 +154,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 4])
       .filter(event => {
+        if (event.type === 'mousedown' && event.button === 1) return true
         if (selectionModeRef.current && event.type === 'mousedown') return false
         return !event.button
       })
@@ -199,7 +200,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
             })
           } else {
             // 일반 클릭: 해당 노드 하나만 선택
-            setSelectedNodes(new Set([d.id]))
+            setSelectedNodes(prev => prev.size === 1 && prev.has(d.id) ? new Set() : new Set([d.id]))
           }
           return
         }
@@ -492,7 +493,7 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
 
     function onMouseUp(e: MouseEvent) {
       const start = dragStartRef.current
-      if (!start) return
+      if (!start || e.button !== 0) return
       dragStartRef.current = null
       didDragRef.current = true
       hideSelRect()
@@ -516,10 +517,9 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
           (n.x ?? 0) >= x0 && (n.x ?? 0) <= x1 &&
           (n.y ?? 0) >= y0 && (n.y ?? 0) <= y1
         )
-        if (inRect.length > 0) {
-          // 드래그 선택은 기존 선택을 대체 (클릭은 토글 추가)
-          setSelectedNodes(new Set(inRect.map(n => n.id)))
-        }
+        setSelectedNodes(new Set(inRect.map(n => n.id)))
+      } else {
+        setSelectedNodes(new Set())
       }
     }
 
@@ -590,9 +590,10 @@ export const GraphView = forwardRef<GraphViewHandle, GraphViewProps>(function Gr
         className="graph-canvas-wrap"
         ref={canvasWrapRef}
         onMouseDown={e => {
-          if (!selectionMode) return
+          if (!selectionMode || e.button !== 0) return
           if ((e.target as Element).closest('.graph-node')) return
           e.preventDefault()
+          didDragRef.current = false
           dragStartRef.current = { x: e.clientX, y: e.clientY }
         }}
         onClick={e => {

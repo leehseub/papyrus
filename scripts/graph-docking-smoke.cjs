@@ -29,6 +29,33 @@ function dragDropCode(side,source) { return `(() => {
  area.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:dt,clientX:x,clientY:y}));
  area.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:dt,clientX:x,clientY:y}));
 })()`; }
+async function checkSelection(win, floating = false) {
+ const toggle = floating ? '.graph-header-actions .graph-float-btn:last-child' : '.graph-header-actions .graph-float-btn';
+ await js(win,`document.querySelector(${JSON.stringify(toggle)}).click()`);
+ await pause(80);
+ const clickNode="document.querySelector('.graph-node').dispatchEvent(new MouseEvent('click',{bubbles:true}))";
+ await js(win,clickNode);
+ await until(win,"document.querySelectorAll('.multi-selected').length===1");
+ await js(win,clickNode);
+ await until(win,"document.querySelectorAll('.multi-selected').length===0");
+ for(const delta of [0, 12]) {
+  await js(win,clickNode);
+  await until(win,"document.querySelectorAll('.multi-selected').length===1");
+  await js(win,`(() => {const svg=document.querySelector('.graph-svg'),r=svg.getBoundingClientRect();svg.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,view:window,clientX:r.left+2,clientY:r.top+2}));window.dispatchEvent(new MouseEvent('mousemove',{view:window,clientX:r.left+2+${delta},clientY:r.top+2+${delta}}));})()`);
+  await pause(60);
+  assert.equal(await js(win,"document.querySelectorAll('.multi-selected').length"),1, 'Selection remains during press and drag');
+  await js(win,`(() => {const r=document.querySelector('.graph-svg').getBoundingClientRect();window.dispatchEvent(new MouseEvent('mouseup',{button:0,view:window,clientX:r.left+2+${delta},clientY:r.top+2+${delta}}));})()`);
+  await until(win,"document.querySelectorAll('.multi-selected').length===0");
+ }
+ await js(win,clickNode);
+ await until(win,"document.querySelectorAll('.multi-selected').length===1");
+ const before=await js(win,"document.querySelector('.graph-svg').__zoom.x");
+ await js(win,"(() => {const svg=document.querySelector('.graph-svg'),r=svg.getBoundingClientRect();svg.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:1,buttons:4,view:window,clientX:r.left+30,clientY:r.top+30}));window.dispatchEvent(new MouseEvent('mousemove',{buttons:4,view:window,clientX:r.left+70,clientY:r.top+60}));window.dispatchEvent(new MouseEvent('mouseup',{button:1,view:window,clientX:r.left+70,clientY:r.top+60}));})()");
+ assert.ok(Math.abs(await js(win,"document.querySelector('.graph-svg').__zoom.x")-before-40)<1);
+ assert.equal(await js(win,"document.querySelectorAll('.multi-selected').length"),1);
+ await pause(80);
+ await js(win,`document.querySelector(${JSON.stringify(toggle)}).click()`);
+}
 app.on('web-contents-created',(_,wc)=>wc.on('console-message',event=> { if(event.message?.includes('Uncaught')) errors.push(event.message); }));
 app.whenReady().then(async()=>{
  try {
@@ -48,6 +75,7 @@ app.whenReady().then(async()=>{
  await until(main,"document.querySelector('.vault-name')?.textContent==='dock-vault'");
  await js(main,"document.querySelectorAll('.sidebar-icon-btns button')[2].click()");
  await until(main,"document.querySelectorAll('.graph-node').length===2");
+ await checkSelection(main);
  await js(main,dragDropCode('left','docked'));
  await until(main,"!!document.querySelector('.graph-panel-left')");
  const rects=await js(main,"({graph:document.querySelector('.graph-panel').getBoundingClientRect().x,editor:document.querySelector('.editor-area').getBoundingClientRect().x})");
@@ -65,6 +93,8 @@ app.whenReady().then(async()=>{
  await until(main,"!document.querySelector('.graph-panel')");
  await until(p,"document.querySelectorAll('.graph-node').length===2");
  await until(p,"document.querySelector('.graph-node').__data__.x===111");
+
+ await checkSelection(p, true);
  assert.ok(p.webContents.getURL().includes('index.html?graphview=1'));
  await js(p,"document.querySelector('.graph-drag-handle').dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:new DataTransfer()}))");
  await js(main,dragDropCode('right','floating'));

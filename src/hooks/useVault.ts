@@ -1,4 +1,4 @@
-import { vaultRelativePath } from '../lib/wikilinks'
+import { vaultRelativePath, validNewNoteName } from '../lib/wikilinks'
 import { flattenFiles } from '../lib/fileTree'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { FolderNode, FileNode } from '../types'
@@ -256,6 +256,25 @@ export function useVault() {
     }
   }, [])
 
+  const createLinkedNote = useCallback(async (name: string, source: FileNode): Promise<FileNode> => {
+    if (validNewNoteName(name) !== name) throw new Error('Invalid note name')
+    const dirHandle = source.dirHandle
+    if (!dirHandle) throw new Error('No writable folder')
+    const filename = `${name}.md`
+    for await (const entry of dirHandle.values()) {
+      if (entry.name.toLocaleLowerCase() === filename.toLocaleLowerCase()) {
+        if (entry.kind !== 'file') throw new Error('Name already exists')
+        return { name: entry.name, path: `${source.path.slice(0, source.path.lastIndexOf('/'))}/${entry.name}`, kind: 'file', handle: await dirHandle.getFileHandle(entry.name), dirHandle }
+      }
+    }
+    const handle = await dirHandle.getFileHandle(filename, { create: true })
+    const writable = await handle.createWritable()
+    await writable.write(`# ${name}\n`)
+    await writable.close()
+    await refreshVault()
+    return { name: filename, path: `${source.path.slice(0, source.path.lastIndexOf('/'))}/${filename}`, kind: 'file', handle, dirHandle }
+  }, [refreshVault])
+
   const createFile = useCallback(async (): Promise<FileNode | null> => {
     const dirHandle = rootHandleRef.current
     if (!dirHandle) return null
@@ -403,5 +422,5 @@ export function useVault() {
     }
   }, [refreshVault])
 
-  return { vault, loading, error, pendingHandle, reconnectVault, openVault, openFile, refreshVault, createFile, deleteFile, updateLinksForRename, moveFile, renameFolder }
+  return { vault, loading, error, pendingHandle, reconnectVault, openVault, openFile, refreshVault, createFile, createLinkedNote, deleteFile, updateLinksForRename, moveFile, renameFolder }
 }

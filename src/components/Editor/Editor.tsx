@@ -122,6 +122,7 @@ const TitleKeyboardBehavior = Extension.create({
 })
 
 interface EditorProps {
+  onCreateWikilink?: (name: string) => Promise<WikilinkOption>
   wikilinkOptions: WikilinkOption[]
   currentPath: string
   content: string
@@ -132,12 +133,12 @@ interface EditorProps {
   onWikilinkClick: (title: string) => void
 }
 
-export function Editor({ wikilinkOptions, currentPath, content, saving, isDirty, onUpdate, onSave, onWikilinkClick }: EditorProps) {
+export function Editor({ onCreateWikilink, wikilinkOptions, currentPath, content, saving, isDirty, onUpdate, onSave, onWikilinkClick }: EditorProps) {
   const t = useT()
-  const wikilinkOptionsRef = useRef({ notes: wikilinkOptions, currentPath, label: t.linkSuggestions, empty: t.noLinkSuggestions })
+  const wikilinkOptionsRef = useRef({ notes: wikilinkOptions, currentPath, label: t.linkSuggestions, empty: t.noLinkSuggestions, create: onCreateWikilink, createLabel: t.createLinkedNote, createError: t.createLinkedNoteError })
   useLayoutEffect(() => {
-    wikilinkOptionsRef.current = { notes: wikilinkOptions, currentPath, label: t.linkSuggestions, empty: t.noLinkSuggestions }
-  }, [wikilinkOptions, currentPath, t])
+    wikilinkOptionsRef.current = { notes: wikilinkOptions, currentPath, label: t.linkSuggestions, empty: t.noLinkSuggestions, create: onCreateWikilink, createLabel: t.createLinkedNote, createError: t.createLinkedNoteError }
+  }, [wikilinkOptions, currentPath, t, onCreateWikilink])
   const WikilinkSuggestion = useMemo(() => createWikilinkSuggestion(() => wikilinkOptionsRef.current), [])
   const { locale } = useLocale()
   const SlashCommandExtension = useMemo(() => createSlashCommandExtension(locale), [locale])

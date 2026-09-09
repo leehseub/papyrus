@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
 import Suggestion, { exitSuggestion } from '@tiptap/suggestion'
 import type { SuggestionProps } from '@tiptap/suggestion'
-import { filterWikilinkOptions, vaultRelativePath } from '../../lib/wikilinks'
+import { filterWikilinkOptions, vaultRelativePath, validNewNoteName } from '../../lib/wikilinks'
 import type { WikilinkOption } from '../../lib/wikilinks'
 import './WikilinkSuggestion.css'
 
@@ -11,6 +11,9 @@ interface Options {
   currentPath: string
   label: string
   empty: string
+  create?: (name: string) => Promise<WikilinkOption>
+  createLabel: (name: string) => string
+  createError: string
 }
 const key = new PluginKey('wikilinkSuggestion')
 
@@ -35,7 +38,12 @@ export function createWikilinkSuggestion(getOptions: () => Options) {
         },
         items: ({ query }) => {
           const options = getOptions()
-          return filterWikilinkOptions(options.notes, query, options.currentPath)
+          const items = filterWikilinkOptions(options.notes, query, options.currentPath)
+          const name = validNewNoteName(query)
+          if (options.create && !items.length && name && !options.notes.some(note => note.title.normalize('NFC').toLocaleLowerCase() === name.normalize('NFC').toLocaleLowerCase())) {
+            items.push({ title: name, target: name, path: `${options.currentPath.slice(0, options.currentPath.lastIndexOf('/'))}/${name}.md`, context: '', create: true })
+          }
+          return items
         },
         command: ({ editor, range, props }) => {
           const $to = editor.state.doc.resolve(range.to)
@@ -50,7 +58,33 @@ export function createWikilinkSuggestion(getOptions: () => Options) {
           let current: SuggestionProps<WikilinkOption, WikilinkOption> | null = null
           let selected = 0
           let previousQuery = ''
+          let pending = false
           const dismiss = () => { if (current) exitSuggestion(current.editor.view, key) }
+
+          async function choose(props: SuggestionProps<WikilinkOption, WikilinkOption>, item: WikilinkOption) {
+            if (pending) return
+            if (!item.create) { props.command(item); return }
+            const create = getOptions().create
+            if (!create) return
+            pending = true
+            menu?.setAttribute('aria-busy', 'true')
+            const doc = props.editor.state.doc
+            try {
+              const note = await create(item.title)
+              if (!props.editor.isDestroyed && current?.query === props.query && current.range.from === props.range.from && props.editor.state.doc.eq(doc)) props.command(note)
+            } catch {
+              if (menu) {
+                const error = document.createElement('p')
+                error.className = 'wikilink-empty'
+                error.setAttribute('role', 'alert')
+                error.textContent = getOptions().createError
+                menu.append(error)
+              }
+            } finally {
+              pending = false
+              menu?.removeAttribute('aria-busy')
+            }
+          }
 
           function highlight() {
             menu?.querySelectorAll<HTMLButtonElement>('.wikilink-option').forEach((button, index) => {
@@ -80,7 +114,8 @@ export function createWikilinkSuggestion(getOptions: () => Options) {
               button.setAttribute('role', 'option')
               const title = document.createElement('span')
               title.className = 'wikilink-option-title'
-              title.textContent = item.title
+              title.textContent = item.create ? getOptions().createLabel(item.title) : item.title
+              if (item.create) button.classList.add('wikilink-create')
               button.dataset.tooltip = vaultRelativePath(item.path)
               button.append(title)
               if (item.context) {
@@ -90,7 +125,7 @@ export function createWikilinkSuggestion(getOptions: () => Options) {
                 button.append(path)
               }
               button.onmousedown = event => event.preventDefault()
-              button.onclick = () => props.command(item)
+              button.onclick = () => { void choose(props, item) }
               button.onmouseenter = () => { selected = index; highlight() }
               menu!.append(button)
             })
@@ -116,7 +151,7 @@ export function createWikilinkSuggestion(getOptions: () => Options) {
                 return true
               }
               if (event.key === 'Enter' || event.key === 'Tab') {
-                current.command(current.items[selected])
+                void choose(current, current.items[selected])
                 return true
               }
               return false
